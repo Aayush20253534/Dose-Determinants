@@ -1,0 +1,38 @@
+[
+  {
+    "id": "1759172678834",
+    "medicineName": "hello",
+    "dosage": "100mg",
+    "time": "00:35",
+    "frequency": "every8h",
+    "duration": 1,
+    "email": "thakur29aayush@gmail.com",
+    "startDate": "2025-09-29",
+    "timezone": "Asia/Calcutta",
+    "createdAt": "2025-09-29T19:04:38.834Z"
+  },
+  {
+    "id": "1759172795651",
+    "medicineName": "hello",
+    "dosage": "100mg",
+    "time": "00:37",
+    "frequency": "every8h",
+    "duration": 3,
+    "email": "thakur29aayush@gmail.com",
+    "startDate": "2025-09-29",
+    "timezone": "Asia/Calcutta",
+    "createdAt": "2025-09-29T19:06:35.652Z"
+  },
+  {
+    "id": "1759172985981",
+    "medicineName": "ello",
+    "dosage": "100mg",
+    "time": "00:40",
+    "frequency": "every8h",
+    "duration": 5,
+    "email": "thakur2006aayush@gmail.com",
+    "startDate": "2025-09-29",
+    "timezone": "Asia/Calcutta",
+    "createdAt": "2025-09-29T19:09:45.982Z"
+  }
+]
