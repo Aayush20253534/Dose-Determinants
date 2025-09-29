@@ -1072,7 +1072,7 @@
                 timezone: userTimezone
             };
 
-            fetch("http://localhost:3000/addSchedule", {  // <-- make sure port matches backend
+           fetch("https://dose-determinants.onrender.com"), {  // <-- make sure port matches backend
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
@@ -1102,5 +1102,6 @@
         setInterval(generateRandomCrierAnnouncement, 300000);
     </script>
 </body>
+
 
 </html>
