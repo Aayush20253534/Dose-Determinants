@@ -1,0 +1,2527 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alchemist's Grand Grimoire</title>
+    <style>
+        .wizard-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.1);
+            z-index: 9998;
+            display: none;
+            pointer-events: none;
+        }
+
+        .wizard-overlay.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .wizard-spotlight {
+            position: absolute;
+            border: 3px solid #ffb347;
+            border-radius: 15px;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.2) 0 0 30px rgba(255, 179, 71, 0.6),
+                inset 0 0 30px rgba(255, 179, 71, 0.3);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+        }
+
+
+
+        .wizard-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 9999;
+            display: none;
+            animation: slideInRight 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .wizard-container.active {
+            display: block;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(500px) scale(0.5);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .wizard-character {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .wizard-avatar {
+            font-size: 120px;
+            text-align: center;
+            animation: wizardFloat 3s ease-in-out infinite, wizardEntrance 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            filter: drop-shadow(0 10px 25px rgba(255, 179, 71, 0.5));
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .wizard-avatar:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        @keyframes wizardFloat {
+
+            0%,
+            100% {
+                transform: translateY(0px) rotate(-3deg);
+            }
+
+            50% {
+                transform: translateY(-20px) rotate(3deg);
+            }
+        }
+
+        @keyframes wizardEntrance {
+            0% {
+                transform: translateY(100px) scale(0) rotate(180deg);
+                opacity: 0;
+            }
+
+            100% {
+                transform: translateY(0) scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        .wizard-sparkles {
+            position: absolute;
+            top: -20px;
+            right: -10px;
+            font-size: 30px;
+            animation: sparkleRotate 4s linear infinite;
+        }
+
+        @keyframes sparkleRotate {
+            0% {
+                transform: rotate(0deg) scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: rotate(180deg) scale(1.3);
+                opacity: 0.6;
+            }
+
+            100% {
+                transform: rotate(360deg) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .wizard-dialogue {
+            background: linear-gradient(135deg, rgba(74, 28, 64, 0.98), rgba(45, 27, 61, 0.98));
+            border: 3px solid #ffb347;
+            border-radius: 20px;
+            padding: 25px;
+            max-width: 450px;
+            position: relative;
+            box-shadow:
+                0 15px 35px rgba(0, 0, 0, 0.5),
+                0 0 20px rgba(255, 179, 71, 0.3),
+                inset 0 0 60px rgba(255, 179, 71, 0.1);
+            animation: dialogueBounce 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.3s backwards;
+        }
+
+        @keyframes dialogueBounce {
+            0% {
+                transform: scale(0) translateY(50px);
+                opacity: 0;
+            }
+
+            100% {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .dialogue-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .dialogue-title {
+            color: #ffb347;
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .dialogue-text {
+            color: #f4e4c1;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            font-family: 'Georgia', serif;
+        }
+
+        .dialogue-arrow {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-bottom: 20px solid #ffb347;
+        }
+
+        .dialogue-arrow::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: -17px;
+            width: 0;
+            height: 0;
+            border-left: 17px solid transparent;
+            border-right: 17px solid transparent;
+            border-bottom: 17px solid rgba(74, 28, 64, 0.98);
+        }
+
+        .wizard-controls {
+            margin-top: 20px;
+        }
+
+        .wizard-progress {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+
+        .progress-text {
+            color: #ffb347;
+            font-weight: bold;
+            font-size: 0.95rem;
+            display: block;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 179, 71, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #ffb347, #ffd700);
+            border-radius: 10px;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 0%;
+            box-shadow: 0 0 10px rgba(255, 179, 71, 0.6);
+        }
+
+        .wizard-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .wizard-btn {
+            padding: 12px 24px;
+            border: 2px solid #ffb347;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(255, 179, 71, 0.2), rgba(255, 107, 107, 0.2));
+            color: #ffb347;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .wizard-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #ffb347, #ff6b6b);
+            color: #2d1b3d;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 179, 71, 0.4);
+        }
+
+        .wizard-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .wizard-btn-skip {
+            background: rgba(255, 71, 87, 0.3);
+            border-color: #ff4757;
+            color: #ff6b6b;
+        }
+
+        .wizard-btn-skip:hover {
+            background: linear-gradient(135deg, #ff4757, #ff3742);
+            color: white;
+        }
+
+        .restart-wizard-btn {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #ffb347, #ff6b6b);
+            border: 3px solid #ffd700;
+            border-radius: 15px;
+            color: #2d1b3d;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            animation: pulseGlow 2s ease-in-out infinite;
+        }
+
+        .restart-wizard-btn:hover {
+            transform: scale(1.1) rotate(-2deg);
+            box-shadow: 0 10px 30px rgba(255, 179, 71, 0.6);
+        }
+
+        @keyframes pulseGlow {
+
+            0%,
+            100% {
+                box-shadow: 0 5px 20px rgba(255, 179, 71, 0.4);
+            }
+
+            50% {
+                box-shadow: 0 5px 35px rgba(255, 179, 71, 0.8);
+            }
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .wizard-container {
+                bottom: 20px;
+                right: 20px;
+                left: 20px;
+            }
+
+            .wizard-dialogue {
+                max-width: 100%;
+            }
+
+            .wizard-avatar {
+                font-size: 80px;
+            }
+
+            .wizard-buttons {
+                flex-wrap: wrap;
+            }
+
+            .wizard-btn {
+                flex: 1;
+                min-width: 100px;
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            background: linear-gradient(135deg, #4a1c40 0%, #2d1b3d 50%, #1a0f2e 100%);
+            color: #f4e4c1;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                radial-gradient(circle at 20% 20%, rgba(255, 215, 0, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(138, 43, 226, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 70%, rgba(255, 105, 180, 0.05) 0%, transparent 50%);
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: linear-gradient(45deg, rgba(255, 215, 0, 0.1), rgba(138, 43, 226, 0.1));
+            border-radius: 20px;
+            border: 2px dashed #ffb347;
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            font-size: 24px;
+            animation: sparkle 2s infinite;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            right: 20px;
+            font-size: 24px;
+            animation: sparkle 2s infinite 1s;
+        }
+
+        @keyframes sparkle {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(1.2);
+            }
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            color: #ffb347;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            font-style: italic;
+            color: #e6d3a3;
+        }
+
+        .nav-tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 5px;
+        }
+
+        .nav-tab {
+            padding: 15px 30px;
+            background: transparent;
+            border: none;
+            color: #f4e4c1;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            font-size: 1.1rem;
+            margin: 0 5px;
+        }
+
+        .nav-tab.active {
+            background: linear-gradient(45deg, #ffb347, #ff6b6b);
+            color: #2d1b3d;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(255, 179, 71, 0.4);
+        }
+
+        .nav-tab:hover:not(.active) {
+            background: rgba(255, 179, 71, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 179, 71, 0.3);
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(255, 179, 71, 0.2);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ffb347;
+            font-weight: bold;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid rgba(255, 179, 71, 0.3);
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            color: #f4e4c1;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #ffb347;
+            box-shadow: 0 0 10px rgba(255, 179, 71, 0.3);
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #ff6b6b, #ffb347);
+            color: #2d1b3d;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #ff4757, #ff3742);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4);
+        }
+
+        .medicine-list {
+            display: grid;
+            gap: 20px;
+        }
+
+        .medicine-item {
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 15px;
+            padding: 20px;
+            border-left: 5px solid #ffb347;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .medicine-item:hover {
+            background: rgba(0, 0, 0, 0.8);
+            border-left-color: #ff6b6b;
+        }
+
+        .medicine-item h3 {
+            color: #ffb347;
+            margin-bottom: 10px;
+            font-size: 1.4rem;
+        }
+
+        .medicine-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .detail-item {
+            background: rgba(255, 179, 71, 0.1);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .detail-label {
+            color: #ffb347;
+            font-weight: bold;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(255, 179, 71, 0.1), rgba(255, 107, 107, 0.1));
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            border: 1px solid rgba(255, 179, 71, 0.3);
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #ffb347;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 1.1rem;
+            color: #e6d3a3;
+        }
+
+        .chart-container {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        .chart {
+            width: 100%;
+            height: 300px;
+            background: rgba(255, 179, 71, 0.1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: #ffb347;
+        }
+
+        .upcoming-doses {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .dose-item {
+            background: rgba(255, 179, 71, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #ffb347;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dose-time {
+            font-weight: bold;
+            color: #ffb347;
+        }
+
+        .dose-medicine {
+            color: #e6d3a3;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #ffb347);
+            color: #2d1b3d;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            z-index: 1000;
+            transform: translateX(400px);
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.8s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .notification.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .notification.fade-out {
+            opacity: 0;
+        }
+
+
+        .mystic-fortune {
+            background: linear-gradient(135deg, rgba(138, 43, 226, 0.2), rgba(255, 105, 180, 0.2));
+            border: 2px solid rgba(138, 43, 226, 0.5);
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .fortune-text {
+            font-size: 1.3rem;
+            font-style: italic;
+            color: #e6d3a3;
+            margin-bottom: 15px;
+        }
+
+        .fortune-crystal {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            animation: rotate 10s linear infinite;
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .wellness-rate {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .wellness-excellent {
+            color: #4ecdc4;
+        }
+
+        .wellness-good {
+            color: #45b7d1;
+        }
+
+        .wellness-fair {
+            color: #f9ca24;
+        }
+
+        .wellness-poor {
+            color: #f0932b;
+        }
+
+        .wellness-critical {
+            color: #eb4d4b;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .nav-tabs {
+                flex-wrap: wrap;
+            }
+
+            .nav-tab {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎪 Alchemist's Grand Grimoire 🎪</h1>
+            <div id="wizardOverlay" class="wizard-overlay">
+                <div class="wizard-spotlight"></div>
+            </div>
+            <div id="wizardContainer" class="wizard-container">
+                <!-- Wizard Character -->
+                <div class="wizard-character">
+                    <div class="wizard-avatar">
+                        🧙‍♂️
+                    </div>
+                    <div class="wizard-sparkles">✨</div>
+                </div>
+
+                <!-- Dialogue Bubble -->
+                <div class="wizard-dialogue">
+                    <div class="dialogue-content">
+                        <h3 class="dialogue-title">Welcome, Apprentice!</h3>
+                        <p class="dialogue-text">Greetings! I am Merlin the Alchemist, your guide through this mystical
+                            grimoire. Shall I show you the secrets of this ancient medicine vault?</p>
+                    </div>
+                    <div class="dialogue-arrow"></div>
+                </div>
+
+                <!-- Progress & Controls -->
+                <div class="wizard-controls">
+                    <div class="wizard-progress">
+                        <span class="progress-text">Step <span id="currentStep">1</span> of <span
+                                id="totalSteps">6</span></span>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                    </div>
+                    <div class="wizard-buttons">
+                        <button class="wizard-btn wizard-btn-skip" onclick="skipTutorial()">Skip Tour</button>
+                        <button class="wizard-btn wizard-btn-prev" onclick="previousStep()" disabled>Previous</button>
+                        <button class="wizard-btn wizard-btn-next" onclick="nextStep()">Next</button>
+                    </div>
+                </div>
+            </div>
+            <!-- Restart Tutorial Button (appears after completion) -->
+            <button id="restartWizard" class="restart-wizard-btn" onclick="startWizard()" style="display: none;">
+                🎪 Start Guide Tour
+            </button>
+            <p>Where Circus Magic Meets Medicine Mastery</p>
+        </div>
+
+        <div class="nav-tabs">
+
+            <button class="nav-tab active" onclick="switchTab('schedule')">📋 Schedule Potions</button>
+            <button class="nav-tab" onclick="switchTab('userDashboard')">📅 User Dashboard</button>
+            <button class="nav-tab" onclick="switchTab('dashboard')">📊 Wellness Dashboard</button>
+
+            <div id="clock" style="
+              position: fixed;
+              top: 20px;
+              right: 20px;
+              background:black;
+              padding: 10px 20px;
+              border-radius: 15px;
+              font-size: 1.2rem;
+              color: #ffb347;
+              font-weight: bold;
+              box-shadow: 0 5px 15px rgba(3, 3, 3, 0.3);
+              z-index: 1000;
+              "></div>
+        </div>
+
+        <div id="streakCounter" style="margin: 15px 0; font-size: 1.2rem; font-weight: bold; color: #ffb347;">
+            🔥 Current Streak: 0 days
+        </div>
+
+        <div id="schedule" class="tab-content active">
+            <div class="card">
+                <h2 style="color: #ffb347; margin-bottom: 20px;">🧪 Brew New Elixir Schedule</h2>
+                <form id="medicineForm">
+                    <div class="form-group">
+                        <label for="medicineName">🧴 Potion Name:</label>
+                        <input type="text" id="medicineName" required placeholder="e.g., flyingpotion">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">📧 User Email:</label>
+                        <input type="email" id="email" required placeholder="e.g., user@example.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dosage">📏 Dosage:</label>
+                        <input type="text" id="dosage" required placeholder="e.g., 500 mg">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="time">⏰ First Dose Time:</label>
+                        <input type="time" id="time" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="frequency">📅 Frequency:</label>
+                        <select id="frequency" required>
+                            <option value="">Select frequency</option>
+                            <option value="onceDaily">Once a day</option>
+                            <option value="twiceDaily">Twice a day (every 12 hrs)</option>
+                            <option value="every8h">Every 8 hours</option>
+                            <option value="everyOtherDay">Every other day</option>
+                            <option value="weekly">Weekly</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="duration">🗓️ Duration:</label>
+                        <input type="number" id="duration" required min="1" max="365" placeholder="e.g., 7 days">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">➕ Add Medication</button>
+                </form>
+
+            </div>
+
+            <div class="card">
+                <h2 style="color: #ffb347; margin-bottom: 20px;">📜 Current Elixir Schedules</h2>
+                <div id="medicineList" class="medicine-list"></div>
+            </div>
+        </div>
+
+        <div id="dashboard" class="tab-content">
+            <div class="mystic-fortune">
+                <div class="fortune-crystal">🔮</div>
+                <div class="wellness-rate" id="wellnessRate">Calculating Wellness Rate...</div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalMedicines">0</div>
+                    <div class="stat-label">Active Elixirs</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="takenToday">0</div>
+                    <div class="stat-label">Taken Today</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="missedToday">0</div>
+                    <div class="stat-label">Missed Today</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="adherenceRate">0%</div>
+                    <div class="stat-label">Adherence Rate</div>
+                </div>
+            </div>
+
+            <div class="card" id="predictionCard" style="margin-bottom:20px;">
+                <h3 style="color: #ffb347; margin-bottom: 12px;">🤖 Adherence Predictions & Risk</h3>
+                <div id="predictionPanel">
+                    <p style="color:#e6d3a3;">Analyzing adherence patterns...</p>
+                </div>
+            </div>
+
+
+
+            <div class="chart-container">
+                <h3 style="color: #ffb347; margin-bottom: 15px;">📈 Adherence Trends Over Time</h3>
+                <canvas id="adherenceChart"></canvas>
+            </div>
+
+            <div class="chart-container">
+                <h3 style="color: #ffb347; margin-bottom: 15px;">📊 Missed vs Taken Doses</h3>
+                <canvas id="missedVsTakenChart"
+                    style="max-width: 250px; max-height: 250px; margin: 0 auto; display: block;"></canvas>
+
+            </div>
+
+            <div class="chart-container">
+                <h3 style="color: #ffb347; margin-bottom: 15px;">📉 Adherence Progress Over 30 Days</h3>
+                <canvas id="trendLineChart"></canvas>
+            </div>
+
+
+            <div class="card">
+                <h3 style="color: #ffb347; margin-bottom: 15px;">⏰ Upcoming Performances</h3>
+                <div id="upcomingDoses" class="upcoming-doses"></div>
+            </div>
+
+        </div>
+
+
+        <div id="userDashboard" class="tab-content">
+            <div class="card">
+                <h2 style="color: #ffb347; margin-bottom: 20px;">📅 Upcoming Reminders</h2>
+                <div id="upcomingRemindersList"></div>
+            </div>
+
+            <div class="card">
+                <h2 style="color: #ffb347; margin-bottom: 20px;">📜 Past Reminders</h2>
+                <button class="btn btn-danger" onclick="clearPastReminders()">🗑️ Clear All Past Reminders</button>
+                <div id="pastRemindersList" style="margin-top: 15px;"></div>
+            </div>
+
+        </div>
+
+
+        <div id="notification" class="notification">
+            <span id="notificationText"></span>
+            <button id="snoozeBtn"
+                style="display:none; margin-left:10px; padding:5px 10px; border:none; border-radius:5px; background:#4ecdc4; color:#fff; cursor:pointer;">
+                Snooze 15 min
+            </button>
+        </div>
+        <!-- Voice picker UI -->
+        <div id="voicePicker"
+            style="max-width:650px;margin:16px;padding:12px;border-radius:10px;border:1px solid #eee;">
+            <h3 style="margin:0 0 8px 0">Wizard voice settings</h3>
+
+            <label for="voiceSelect">Choose voice</label><br>
+            <select id="voiceSelect" style="width:100%;padding:8px;margin:6px 0;"></select>
+
+            <div style="display:flex;gap:8px;align-items:center;margin:8px 0;">
+                <label style="white-space:nowrap">Rate</label>
+                <input id="rate" type="range" min="0.6" max="1.4" step="0.05" value="0.95" />
+                <span id="rateVal">0.95</span>
+                <label style="margin-left:12px;white-space:nowrap">Pitch</label>
+                <input id="pitch" type="range" min="0.6" max="1.6" step="0.05" value="1" />
+                <span id="pitchVal">1.0</span>
+            </div>
+
+            <label for="sampleText">Preview text</label>
+            <textarea id="sampleText" rows="3"
+                style="width:100%;padding:8px;margin:6px 0;">Hello — I am your mentor. Nice to meet you!</textarea>
+
+            <div style="display:flex;gap:8px;margin-top:8px;">
+                <button id="previewBtn" style="padding:8px 12px;">🔊 Preview Voice</button>
+                <button id="stopBtn" style="padding:8px 12px;">⏹ Stop</button>
+                <button id="resetVoice" style="padding:8px 12px;margin-left:auto;">Reset to default</button>
+            </div>
+
+            <div id="voiceInfo" style="margin-top:10px;color:#666;font-size:13px;"></div>
+        </div>
+
+
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+            let medicines = JSON.parse(localStorage.getItem('medicines') || '[]');
+            let doseLogs = JSON.parse(localStorage.getItem('doseLogs') || '[]');
+            let currentEditingId = null;
+            let notificationTimeout;
+
+            const crierAnnouncements = [
+                "🎪 Attention performers! Remember your morning strength elixir before the aerial acts!",
+                "🎭 The show starts in 30 minutes - time for your pre-performance potions!",
+                "⚡ Energy levels looking optimal today thanks to consistent elixir adherence!",
+                "🌟 Outstanding wellness performance this week! The audience applauds your dedication!",
+                "🎪 New safety protocol: Double-check your elixir schedule before entering the ring!",
+                "🎨 The Alchemist has brewed fresh batches - your supply is ready for pickup!"
+            ];
+
+            document.addEventListener('DOMContentLoaded', function () {
+                renderMedicines();
+                updateDashboard();
+                setupNotifications();
+                generateRandomCrierAnnouncement();
+                updateStreakDisplay();
+            });
+
+            function switchTab(tabName) {
+
+                document.querySelectorAll('.tab-content').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+
+                document.querySelectorAll('.nav-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+
+
+                document.getElementById(tabName).classList.add('active');
+
+                event.target.classList.add('active');
+
+                if (tabName === 'dashboard') {
+                    updateDashboard();
+                }
+                if (tabName === 'userDashboard') {
+                    renderUserDashboard();
+                }
+
+            }
+
+            function renderMedicines() {
+                const container = document.getElementById('medicineList');
+
+                if (medicines.length === 0) {
+                    container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #e6d3a3;">
+                        <div style="font-size: 3rem; margin-bottom: 20px;">📜</div>
+                        <p>No elixirs in your Grimoire yet. Add your first magical formula above!</p>
+                    </div>
+                `;
+                    return;
+                }
+
+                container.innerHTML = medicines.map(medicine => `
+                <div class="medicine-item">
+                    <h3>🧪 ${medicine.name}</h3>
+                    <div class="medicine-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Dosage:</span> ${medicine.dosage}
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Time:</span> ${formatTime(medicine.time)}
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Frequency:</span> ${medicine.frequency}
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-primary" onclick="editMedicine('${medicine.id}')">✏️ Edit</button>
+                        <button class="btn btn-danger" onclick="deleteMedicine('${medicine.id}')">🗑️ Remove</button>
+                        <button class="btn btn-primary" onclick="markAsTaken('${medicine.id}')">✅ Mark Taken</button>
+                    </div>
+                </div>
+            `).join('');
+            }
+
+            function formatTime(time24) {
+                const [hours, minutes] = time24.split(':');
+                const hour = parseInt(hours);
+                const ampm = hour >= 12 ? 'PM' : 'AM';
+                const displayHour = hour % 12 || 12;
+                return `${displayHour}:${minutes} ${ampm}`;
+            }
+
+            function editMedicine(id) {
+                const medicine = medicines.find(med => med.id === id);
+                if (medicine) {
+                    document.getElementById('medicineName').value = medicine.name;
+                    document.getElementById('dosage').value = medicine.dosage;
+                    document.getElementById('time').value = medicine.time;
+                    document.getElementById('frequency').value = medicine.frequency;
+                    currentEditingId = id;
+                    switchTab('schedule');
+                    showNotification('📝 Ready to edit elixir formula');
+                }
+            }
+
+            function deleteMedicine(id) {
+                if (confirm('Are you sure you want to remove this elixir from your Grimoire?')) {
+                    medicines = medicines.filter(med => med.id !== id);
+                    localStorage.setItem('medicines', JSON.stringify(medicines));
+                    renderMedicines();
+                    updateDashboard();
+                    showNotification('🗑️ Elixir removed from Grimoire');
+                }
+            }
+
+            function markAsTaken(id) {
+                const medicine = medicines.find(med => med.id === id);
+                if (!medicine) return;
+
+                const now = new Date();
+                const today = now.toDateString();
+
+                const lastTaken = doseLogs
+                    .filter(log => log.medicineId === id && log.status === 'taken')
+                    .sort((a, b) => new Date(b.takenAt) - new Date(a.takenAt))[0];
+
+                let nextAllowedTime = null;
+                if (lastTaken) {
+                    const lastDate = new Date(lastTaken.takenAt);
+                    nextAllowedTime = new Date(lastDate);
+
+                    switch (medicine.frequency) {
+                        case "onceDaily":
+                            nextAllowedTime.setDate(lastDate.getDate() + 1);
+                            break;
+                        case "twiceDaily":
+                            nextAllowedTime.setHours(lastDate.getHours() + 12);
+                            break;
+                        case "every8h":
+                            nextAllowedTime.setHours(lastDate.getHours() + 8);
+                            break;
+                        case "everyOtherDay":
+                            nextAllowedTime.setDate(lastDate.getDate() + 2);
+                            break;
+                        case "weekly":
+                            nextAllowedTime.setDate(lastDate.getDate() + 7);
+                            break;
+                    }
+                }
+
+                if (nextAllowedTime && now < nextAllowedTime) {
+                    showNotification(
+                        `⏳ Too early! Next dose of ${medicine.name} is allowed after ${nextAllowedTime.toLocaleString()}`,
+                        6000
+                    );
+                    return;
+                }
+
+                const log = {
+                    medicineId: id,
+                    medicineName: medicine.name,
+                    takenAt: now.toISOString(),
+                    status: 'taken'
+                };
+                doseLogs.push(log);
+                localStorage.setItem('doseLogs', JSON.stringify(doseLogs));
+                renderUserDashboard();
+                updateUpcomingDoses();
+                checkDueMedicines();
+                showNotification(`✨ ${medicine.name} marked as taken!`);
+                updateStreakDisplay();
+
+
+            }
+            function updateDashboard() {
+                const today = new Date().toDateString();
+
+                let totalMedicines = 0;
+                let takenToday = 0;
+                let missedToday = 0;
+
+                medicines.forEach(med => {
+                    totalMedicines++;
+                    const taken = doseLogs.some(log =>
+                        log.medicineId === med.id &&
+                        new Date(log.takenAt).toDateString() === today
+                    );
+
+                    if (taken) {
+                        takenToday++;
+                    } else {
+                        const [hours, minutes] = med.time.split(':');
+                        const doseTime = new Date();
+                        doseTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+                        if (doseTime < new Date()) {
+                            missedToday++;
+                        }
+                    }
+                });
+
+                const adherenceRate = totalMedicines > 0 ?
+                    Math.round((takenToday / totalMedicines) * 100) : 0;
+
+                document.getElementById('totalMedicines').textContent = totalMedicines;
+                document.getElementById('takenToday').textContent = takenToday;
+                document.getElementById('missedToday').textContent = missedToday;
+                document.getElementById('adherenceRate').textContent = adherenceRate + '%';
+
+                updateWellnessRate(adherenceRate);
+                updateUpcomingDoses();
+                renderAdherenceChart();
+                renderMissedVsTakenChart();
+                renderTrendLineChart();
+            }
+            let adherenceChartInstance = null;
+
+            function renderAdherenceChart() {
+                const ctx = document.getElementById('adherenceChart').getContext('2d');
+
+                const labels = [];
+                const data = [];
+                for (let i = 6; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    const dayStr = date.toDateString();
+
+                    const medsToday = medicines.length;
+                    const takenToday = doseLogs.filter(log =>
+                        new Date(log.takenAt).toDateString() === dayStr &&
+                        log.status === 'taken'
+                    ).length;
+
+                    const adherence = medsToday > 0 ? Math.round((takenToday / medsToday) * 100) : 0;
+                    labels.push(date.toLocaleDateString(undefined, { weekday: 'short' }));
+                    data.push(adherence);
+                }
+
+                if (adherenceChartInstance) {
+                    adherenceChartInstance.destroy();
+                }
+
+                adherenceChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Adherence %',
+                            data: data,
+                            backgroundColor: 'rgba(255, 179, 71, 0.6)',
+                            borderColor: '#ffb347',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100
+                            }
+                        }
+                    }
+                });
+            }
+
+            function renderMissedVsTakenChart() {
+                const ctx = document.getElementById('missedVsTakenChart').getContext('2d');
+                const today = new Date().toDateString();
+
+                const taken = doseLogs.filter(log => new Date(log.takenAt).toDateString() === today).length;
+                const missed = medicines.length > 0 ? medicines.length - taken : 0;
+
+                if (window.missedVsTakenChartInstance) {
+                    window.missedVsTakenChartInstance.destroy();
+                }
+
+                window.missedVsTakenChartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Taken', 'Missed'],
+                        datasets: [{
+                            data: [taken, missed],
+                            backgroundColor: ['#4ecdc4', '#eb4d4b'],
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        }
+                    }
+                });
+            }
+
+            function renderTrendLineChart() {
+                const ctx = document.getElementById('trendLineChart').getContext('2d');
+                const labels = [];
+                const data = [];
+
+                for (let i = 29; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    const dayStr = date.toDateString();
+
+                    const medsToday = medicines.length;
+                    const takenToday = doseLogs.filter(log =>
+                        new Date(log.takenAt).toDateString() === dayStr &&
+                        log.status === 'taken'
+                    ).length;
+
+                    const adherence = medsToday > 0 ? Math.round((takenToday / medsToday) * 100) : 0;
+                    labels.push(date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+                    data.push(adherence);
+                }
+
+                if (window.trendLineChartInstance) {
+                    window.trendLineChartInstance.destroy();
+                }
+
+                window.trendLineChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: 'Daily Adherence %',
+                            data,
+                            borderColor: '#ffb347',
+                            backgroundColor: 'rgba(255,179,71,0.2)',
+                            fill: true,
+                            tension: 0.3
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100
+                            }
+                        }
+                    }
+                });
+            }
+
+            function updateWellnessRate(rate) {
+                const wellnessElement = document.getElementById('wellnessRate');
+                let ratingText = '';
+                let ratingClass = '';
+
+                if (rate >= 90) {
+                    ratingText = '✨ Excellent Wellness ✨';
+                    ratingClass = 'wellness-excellent';
+                } else if (rate >= 75) {
+                    ratingText = '🌟 Good Wellness 🌟';
+                    ratingClass = 'wellness-good';
+                } else if (rate >= 50) {
+                    ratingText = '⚡ Fair Wellness ⚡';
+                    ratingClass = 'wellness-fair';
+                } else if (rate >= 25) {
+                    ratingText = '⚠️ Poor Wellness ⚠️';
+                    ratingClass = 'wellness-poor';
+                } else {
+                    ratingText = '🚨 Critical Wellness 🚨';
+                    ratingClass = 'wellness-critical';
+                }
+
+                wellnessElement.textContent = ratingText;
+                wellnessElement.className = `wellness-rate ${ratingClass}`;
+            }
+
+            function updateUpcomingDoses() {
+                const container = document.getElementById('upcomingDoses');
+                const now = new Date();
+                const upcoming = [];
+
+                medicines.forEach(medicine => {
+                    const lastTaken = doseLogs
+                        .filter(log => log.medicineId === medicine.id && log.status === 'taken')
+                        .sort((a, b) => new Date(b.takenAt) - new Date(a.takenAt))[0];
+
+                    let nextDoseTime;
+
+                    if (lastTaken) {
+                        nextDoseTime = new Date(lastTaken.takenAt);
+                        switch (medicine.frequency) {
+                            case "onceDaily":
+                                nextDoseTime.setDate(nextDoseTime.getDate() + 1);
+                                break;
+                            case "twiceDaily":
+                                nextDoseTime.setHours(nextDoseTime.getHours() + 12);
+                                break;
+                            case "every8h":
+                                nextDoseTime.setHours(nextDoseTime.getHours() + 8);
+                                break;
+                            case "everyOtherDay":
+                                nextDoseTime.setDate(nextDoseTime.getDate() + 2);
+                                break;
+                            case "weekly":
+                                nextDoseTime.setDate(nextDoseTime.getDate() + 7);
+                                break;
+                            default:
+                                nextDoseTime.setDate(nextDoseTime.getDate() + 1);
+                        }
+                    } else {
+                        const [hours, minutes] = medicine.time.split(':');
+                        nextDoseTime = new Date();
+                        nextDoseTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+                        if (nextDoseTime <= now) {
+                            nextDoseTime.setDate(nextDoseTime.getDate() + 1);
+                        }
+                    }
+
+                    upcoming.push({
+                        medicine: medicine.name,
+                        time: nextDoseTime,
+                        displayTime: nextDoseTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    });
+                });
+
+                upcoming.sort((a, b) => a.time - b.time);
+
+                if (upcoming.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #e6d3a3;">No upcoming doses scheduled</p>';
+                    return;
+                }
+
+                container.innerHTML = upcoming.map(dose => `
+                <div class="dose-item">
+                    <div>
+                        <div class="dose-time">${dose.displayTime}</div>
+                        <div class="dose-medicine">🧪 ${dose.medicine}</div>
+                    </div>
+                    <div style="color: #ffb347;">
+                        ${dose.time.toDateString() === now.toDateString() ? 'Today' : 'Tomorrow'}
+                    </div>
+                </div>
+            `).join('');
+            }
+            function renderUserDashboard() {
+                const now = new Date();
+
+                const upcomingReminders = medicines.map(med => {
+                    const lastTaken = doseLogs
+                        .filter(log => log.medicineId === med.id && log.status === 'taken')
+                        .sort((a, b) => new Date(b.takenAt) - new Date(a.takenAt))[0];
+
+                    let nextDoseTime;
+
+                    if (lastTaken) {
+                        nextDoseTime = new Date(lastTaken.takenAt);
+
+                        switch (med.frequency) {
+                            case "onceDaily":
+                                nextDoseTime.setDate(nextDoseTime.getDate() + 1);
+                                break;
+                            case "twiceDaily":
+                                nextDoseTime.setHours(nextDoseTime.getHours() + 12);
+                                break;
+                            case "every8h":
+                                nextDoseTime.setHours(nextDoseTime.getHours() + 8);
+                                break;
+                            case "everyOtherDay":
+                                nextDoseTime.setDate(nextDoseTime.getDate() + 2);
+                                break;
+                            case "weekly":
+                                nextDoseTime.setDate(nextDoseTime.getDate() + 7);
+                                break;
+                            default:
+                                nextDoseTime.setDate(nextDoseTime.getDate() + 1);
+                        }
+                    } else {
+                        // Fallback if never taken
+                        const [hours, minutes] = med.time.split(':');
+                        nextDoseTime = new Date();
+                        nextDoseTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+                        if (nextDoseTime < now) nextDoseTime.setDate(nextDoseTime.getDate() + 1);
+                    }
+
+                    return {
+                        name: med.name,
+                        time: nextDoseTime,
+                        status: '⏳ Upcoming'
+                    };
+                }).sort((a, b) => a.time - b.time);
+
+
+                const pastReminders = doseLogs
+                    .map(log => ({
+                        name: log.medicineName,
+                        time: new Date(log.takenAt),
+                        status: log.status === 'taken' ? '✅ Taken' : '❌ Missed'
+                    }))
+                    .sort((a, b) => b.time - a.time);
+
+                const upcomingContainer = document.getElementById('upcomingRemindersList');
+                if (upcomingReminders.length === 0) {
+                    upcomingContainer.innerHTML = `<p style="color: #e6d3a3;">No upcoming reminders scheduled.</p>`;
+                } else {
+                    upcomingContainer.innerHTML = upcomingReminders.map(reminder => `
+            <div class="dose-item" style="display: flex; justify-content: space-between;">
+                <div>
+                    <div class="dose-time">${reminder.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                    <div class="dose-medicine">🧪 ${reminder.name}</div>
+                </div>
+                <div style="font-weight: bold; color: #4ecdc4;">${reminder.status}</div>
+            </div>
+        `).join('');
+                }
+
+                const pastContainer = document.getElementById('pastRemindersList');
+                if (pastReminders.length === 0) {
+                    pastContainer.innerHTML = `<p style="color: #e6d3a3;">No past reminders recorded yet.</p>`;
+                } else {
+                    pastContainer.innerHTML = pastReminders.map(reminder => `
+            <div class="dose-item" style="display: flex; justify-content: space-between;">
+                <div>
+                    <div class="dose-time">${reminder.time.toLocaleString()}</div>
+                    <div class="dose-medicine">🧪 ${reminder.name}</div>
+                </div>
+                <div style="font-weight: bold; color: ${reminder.status.includes('✅') ? '#4ecdc4' : '#eb4d4b'};">
+                    ${reminder.status}
+                </div>
+            </div>
+        `).join('');
+                }
+            }
+
+
+            function showNotification(message, duration = 4000, options = {}) {
+                const notification = document.getElementById('notification');
+                const notificationText = document.getElementById('notificationText');
+                const snoozeBtn = document.getElementById('snoozeBtn');
+
+                if (notificationTimeout) clearTimeout(notificationTimeout);
+
+                notification.classList.remove('show', 'fade-out');
+                snoozeBtn.style.display = options.allowSnooze ? 'inline-block' : 'none';
+
+                snoozeBtn.onclick = () => {
+                    notification.classList.remove('show');
+                    scheduleSnoozeReminder(options.medicineId || null, 15);
+                };
+
+                setTimeout(() => {
+                    notificationText.textContent = message;
+                    notification.classList.add('show');
+                }, 50);
+
+                notificationTimeout = setTimeout(() => {
+                    notification.classList.add('fade-out');
+                    setTimeout(() => {
+                        notification.classList.remove('show', 'fade-out');
+                    }, 800);
+                }, duration);
+            }
+
+            function checkDueMedicines() {
+                const now = new Date();
+
+                medicines.forEach(medicine => {
+                    const [hours, minutes] = medicine.time.split(':');
+                    const scheduled = new Date();
+                    scheduled.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+                    const diff = Math.abs(now - scheduled);
+
+                    if (diff <= 60000) {
+                        showNotification(
+                            `🔔 Time for ${medicine.name}! Dosage: ${medicine.dosage}`,
+                            8000,
+                            { allowSnooze: true, medicineId: medicine.id }
+                        );
+
+                        if ('Notification' in window && Notification.permission === 'granted') {
+                            new Notification('🎪 Alchemist\'s Reminder', {
+                                body: `Time for ${medicine.name}! Dosage: ${medicine.dosage}`,
+                                icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🧪</text></svg>'
+                            });
+                        }
+                    }
+                });
+
+            }
+
+            function scheduleSnoozeReminder(medicineId, minutes) {
+                const med = medicines.find(m => m.id === medicineId);
+                if (!med) return;
+
+                const snoozeTime = new Date(Date.now() + minutes * 60 * 1000);
+
+                showNotification(`🔔 Snoozed! I’ll remind you about ${med.name} at ${snoozeTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`, 4000);
+
+                setTimeout(() => {
+                    showNotification(`⏰ Time to take ${med.name}!`, 8000, { allowSnooze: true, medicineId });
+                }, minutes * 60 * 1000);
+            }
+
+
+            function updateClock() {
+                const clock = document.getElementById('clock');
+                const now = new Date();
+                const hours = now.getHours().toString().padStart(2, '0');
+                const minutes = now.getMinutes().toString().padStart(2, '0');
+                const seconds = now.getSeconds().toString().padStart(2, '0');
+                clock.textContent = `🕰️ ${hours}:${minutes}:${seconds}`;
+            }
+            function clearPastReminders() {
+                if (confirm("Are you sure you want to clear all past reminders? This action cannot be undone.")) {
+                    doseLogs = [];
+                    localStorage.setItem('doseLogs', JSON.stringify(doseLogs));
+                    renderUserDashboard();
+                    showNotification('🧹 All past reminders cleared successfully!');
+                    updateStreakDisplay();
+                }
+            }
+
+            updateClock();
+            setInterval(updateClock, 1000);
+
+            function generateRandomCrierAnnouncement() {
+                const randomAnnouncement = crierAnnouncements[Math.floor(Math.random() * crierAnnouncements.length)];
+                document.getElementById('circusCrier').innerHTML = `
+                <div style="background: rgba(255, 179, 71, 0.1); padding: 15px; border-radius: 10px; border-left: 4px solid #ffb347;">
+                    <p style="font-style: italic; color: #e6d3a3; margin-bottom: 10px;">${randomAnnouncement}</p>
+                    <small style="color: #ffb347;">- The Circus Crier, ${new Date().toLocaleTimeString()}</small>
+                </div>
+            `;
+            }
+
+            document.getElementById('medicineForm').addEventListener('submit', async function (e) {
+                e.preventDefault();
+
+                const formData = {
+                    id: currentEditingId || Date.now().toString(),
+                    name: document.getElementById('medicineName').value,
+                    dosage: document.getElementById('dosage').value,
+                    time: document.getElementById('time').value,
+                    frequency: document.getElementById('frequency').value,
+                    duration: parseInt(document.getElementById('duration').value),
+                    createdAt: new Date().toISOString()
+                };
+
+                if (currentEditingId) {
+                    const index = medicines.findIndex(med => med.id === currentEditingId);
+                    medicines[index] = { ...medicines[index], ...formData };
+                    showNotification('🧪 Elixir formula updated successfully!');
+                    currentEditingId = null;
+                } else {
+                    medicines.push(formData);
+                    showNotification('✨ New elixir added to the Grimoire!');
+                }
+
+                localStorage.setItem('medicines', JSON.stringify(medicines));
+                renderMedicines();
+                updateDashboard();
+
+                const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                const payload = {
+                    medicineName: formData.name,
+                    dosage: formData.dosage,
+                    time: formData.time,
+                    frequency: formData.frequency,
+                    duration: formData.duration,
+                    email: document.getElementById('email').value,
+                    startDate: new Date().toISOString().split('T')[0],
+                    timezone: userTimezone
+                };
+
+                fetch("http://localhost:3000/addSchedule", {  // <-- make sure port matches backend
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                })
+                    .then(r => r.json())
+                    .then(resp => {
+                        console.log('📡 Server schedule response:', resp);
+                    })
+                    .catch(err => {
+                        console.warn('❌ Failed to add schedule to server:', err);
+                    });
+
+                this.reset();
+                updateStreakDisplay();
+            });
+
+            function frequencyToHours(freq) {
+                switch (freq) {
+                    case "onceDaily": return 24;
+                    case "twiceDaily": return 12;
+                    case "every8h": return 8;
+                    case "everyOtherDay": return 48;
+                    case "weekly": return 24 * 7;
+                    default: return 24;
+                }
+            }
+
+            function computeMedicineRisk(med) {
+                const now = new Date();
+                const msInDay = 24 * 60 * 60 * 1000;
+                const logs = doseLogs.filter(l => l.medicineId === med.id);
+                const totalLogged = logs.length;
+                const missedCount = logs.filter(l => l.status === 'missed').length;
+                const missRate = totalLogged > 0 ? (missedCount / totalLogged) : 0;
+                const daysWindow = 14;
+                const cutoffRecent = new Date(now.getTime() - daysWindow * msInDay);
+                const recentMisses = logs.filter(l => new Date(l.takenAt) >= cutoffRecent && l.status === 'missed').length;
+                const lastTaken = logs.filter(l => l.status === 'taken').sort((a, b) => new Date(b.takenAt) - new Date(a.takenAt))[0];
+                let hoursSinceLastTaken = Infinity;
+                if (lastTaken) {
+                    hoursSinceLastTaken = (now - new Date(lastTaken.takenAt)) / (1000 * 60 * 60);
+                }
+
+                const missTimeBuckets = {};
+                logs.filter(l => l.status === 'missed').forEach(l => {
+                    const d = new Date(l.takenAt);
+                    const key = d.getHours() + ':' + d.getMinutes();
+                    missTimeBuckets[key] = (missTimeBuckets[key] || 0) + 1;
+                });
+                const missTimeMax = Object.keys(missTimeBuckets).length ? Math.max(...Object.values(missTimeBuckets)) : 0;
+                let expected = 0;
+                if (med.createdAt && med.duration) {
+                    try {
+                        const created = new Date(med.createdAt);
+                        const elapsedDays = Math.max(1, Math.floor((now - created) / msInDay));
+                        const freqHours = frequencyToHours(med.frequency || "onceDaily");
+                        expected = Math.round(elapsedDays * (24 / freqHours));
+                    } catch (e) {
+                        expected = 0;
+                    }
+                }
+
+                const missedRelative = expected > 0 ? Math.min(1, missedCount / expected) : missRate;
+                const recentScore = Math.min(1, recentMisses / Math.max(1, daysWindow / Math.max(1, frequencyToHours(med.frequency || 'onceDaily') / 24)));
+                const hoursScale = Math.min(1, hoursSinceLastTaken / (frequencyToHours(med.frequency || 'onceDaily') * 2 + 1)); // if >2x freq, risk
+                const timeConcentration = Math.min(1, missTimeMax / Math.max(1, Math.ceil(totalLogged * 0.3)));
+
+                let risk = (
+                    recentScore * 0.35 +
+                    missRate * 0.25 +
+                    missedRelative * 0.15 +
+                    hoursScale * 0.15 +
+                    timeConcentration * 0.10
+                );
+
+                risk = Math.round(Math.min(1, risk) * 100);
+
+                const reasons = [];
+                if (recentMisses > 0) reasons.push(`${recentMisses} miss${recentMisses > 1 ? 'es' : ''} in last ${daysWindow}d`);
+                if (missRate > 0.1) reasons.push(`overall miss rate ${(missRate * 100).toFixed(0)}%`);
+                if (hoursSinceLastTaken !== Infinity && hoursSinceLastTaken > frequencyToHours(med.frequency || 'onceDaily') * 1.5) reasons.push(`last taken ${Math.round(hoursSinceLastTaken)}h ago`);
+                if (timeConcentration > 0.5) reasons.push('misses cluster at same time of day');
+
+                const suggestionParts = [];
+                if (risk >= 75) suggestionParts.push('Consider extra reminders and review schedule');
+                else if (risk >= 50) suggestionParts.push('Snooze and repeat reminders; check routine');
+                else suggestionParts.push('Keep the good routine');
+
+                return {
+                    medicineId: med.id,
+                    name: med.name,
+                    risk,
+                    reasons: reasons.length ? reasons : ['no significant issues'],
+                    suggestion: suggestionParts.join('; ')
+                };
+            }
+
+            function analyzeAdherencePatterns() {
+                const panel = document.getElementById('predictionPanel');
+                if (!panel) return;
+
+                if (!medicines || medicines.length === 0) {
+                    panel.innerHTML = `<p style="color:#e6d3a3;">No medicines to analyze.</p>`;
+                    return;
+                }
+
+                const results = medicines.map(med => computeMedicineRisk(med));
+
+                results.sort((a, b) => b.risk - a.risk);
+
+                const rows = results.map(r => {
+                    const color =
+                        r.risk >= 75 ? '#eb4d4b' :
+                            r.risk >= 50 ? '#f0932b' :
+                                r.risk >= 25 ? '#f9ca24' : '#4ecdc4';
+                    return `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px dashed rgba(255,255,255,0.03);">
+                <div style="flex:1;">
+                    <div style="font-weight:bold; color:#ffb347;">${r.name}</div>
+                    <div style="color:#e6d3a3; font-size:0.9rem;">${r.reasons.join(' · ')}</div>
+                </div>
+                <div style="width:140px; text-align:right;">
+                    <div style="font-weight:bold; color:${color}; font-size:1.2rem;">${r.risk}%</div>
+                    <div style="font-size:0.85rem; color:#e6d3a3;">${r.suggestion}</div>
+                </div>
+            </div>
+        `;
+                }).join('');
+
+                panel.innerHTML = `
+        <div style="border-radius:8px; overflow:hidden; background:linear-gradient(90deg, rgba(0,0,0,0.35), rgba(0,0,0,0.25));">
+            ${rows}
+        </div>
+        <div style="margin-top:10px; color:#e6d3a3; font-size:0.9rem;">
+            Proactive suggestions are heuristic-based. For persistent high risk, consider adjusting schedule or enabling extra reminders.
+        </div>
+    `;
+
+                const high = results.find(r => r.risk >= 85);
+                if (high) {
+                    showNotification(`⚠️ High risk detected for ${high.name} (${high.risk}%). Consider reviewing schedule.`, 7000);
+                }
+            }
+
+            try {
+                const _origUpdate = updateDashboard;
+                updateDashboard = function () {
+                    _origUpdate();
+                    analyzeAdherencePatterns();
+                };
+            } catch (e) {
+
+            }
+
+            function calculateStreak() {
+                const dates = {};
+                doseLogs.forEach(log => {
+                    const date = new Date(log.takenAt).toDateString();
+                    if (!dates[date]) dates[date] = { taken: 0, missed: 0, total: 0 };
+                    if (log.status === 'taken') dates[date].taken++;
+                    if (log.status === 'missed') dates[date].missed++;
+                    dates[date].total++;
+                });
+
+                let streak = 0;
+                let currentDate = new Date();
+                currentDate.setHours(0, 0, 0, 0);
+
+                while (true) {
+                    const dayKey = currentDate.toDateString();
+
+                    if (!dates[dayKey]) break;
+
+                    if (dates[dayKey].missed > 0 || dates[dayKey].taken < dates[dayKey].total) break;
+
+                    streak++;
+                    currentDate.setDate(currentDate.getDate() - 1);
+                }
+
+                return streak;
+            }
+            function updateStreakDisplay() {
+                const streakDays = calculateStreak();
+                const streakElement = document.getElementById('streakCounter');
+
+                if (streakDays === 0) {
+                    streakElement.textContent = "🔥 Current Streak: 0 days 😔 (start taking doses consistently!)";
+                } else {
+                    streakElement.textContent = `🔥 Current Streak: ${streakDays} day${streakDays > 1 ? 's' : ''} 🏆`;
+                }
+            }
+
+            setInterval(generateRandomCrierAnnouncement, 300000);
+            setInterval(checkDueMedicines, 60000);
+            const tutorialSteps = [
+                {
+                    target: '.header',
+                    title: 'Welcome to Your Grimoire!',
+                    text: 'This is your magical medicine management system...',
+                    position: 'bottom'
+                },
+                {
+                    target: '.nav-tabs',
+                    title: 'Navigation Crystals',
+                    text: 'These enchanted tabs let you switch between sections...',
+                    position: 'bottom'
+                },
+                {
+                    target: '#medicineForm',
+                    title: 'Schedule Potion Form',
+                    text: 'Here you enter the essential details for your elixir.',
+                    position: 'top'
+                },
+                {
+                    target: '#email',
+                    title: '📧 Email Field',
+                    text: 'Here you must provide your email to receive reminders.',
+                    position: 'top'
+                },
+                {
+                    target: '#medicineList',
+                    title: '📜 Current Elixir Schedules',
+                    text: 'Here you can see and manage your existing potion plans.',
+                    position: 'top'
+                },
+                {
+                    target: '#predictionPanel',
+                    title: '🤖 Adherence Predictions',
+                    text: 'This panel predicts adherence trends and highlights risk levels.',
+                    position: 'top'
+                },
+                {
+                    target: '#dashboard',
+                    title: '📊 Wellness Dashboard',
+                    text: 'Here are your wellness metrics, adherence trends, and charts.',
+                    position: 'top'
+                },
+
+                {
+                    target: '#streakCounter',
+                    title: '🔥 Streak Counter',
+                    text: 'This shows how many days you have successfully followed your schedule.',
+                    position: 'top'
+                },
+                {
+                    target: '#notification',
+                    title: '⏰ Notification System',
+                    text: 'This magical bell alerts you when it is time to take your potion.',
+                    position: 'top'
+                },
+            ];
+
+            let currentStepIndex = 0;
+            let wizardActive = false;
+            function startWizard() {
+                wizardActive = true;
+                currentStepIndex = 0;
+
+                document.getElementById('wizardOverlay').classList.add('active');
+                document.getElementById('wizardContainer').classList.add('active');
+                document.getElementById('restartWizard').style.display = 'none';
+
+                showStep(0);
+            }
+            function showStep(index) {
+                if (index < 0 || index >= tutorialSteps.length) return;
+
+                currentStepIndex = index;
+                const step = tutorialSteps[index];
+
+                // Update dialogue content
+                document.querySelector('.dialogue-title').textContent = step.title;
+                document.querySelector('.dialogue-text').textContent = step.text;
+
+                // Update progress
+                document.getElementById('currentStep').textContent = index + 1;
+                document.getElementById('totalSteps').textContent = tutorialSteps.length;
+                const progress = ((index + 1) / tutorialSteps.length) * 100;
+                document.getElementById('progressFill').style.width = progress + '%';
+
+                // Update buttons
+                document.querySelector('.wizard-btn-prev').disabled = index === 0;
+                const nextBtn = document.querySelector('.wizard-btn-next');
+                nextBtn.textContent = index === tutorialSteps.length - 1 ? 'Finish' : 'Next';
+
+                // Highlight target element
+                highlightElement(step.target, step.position);
+            }
+            function highlightElement(selector, position) {
+                const element = document.querySelector(selector);
+                if (!element) return;
+
+                const spotlight = document.querySelector('.wizard-spotlight');
+                const rect = element.getBoundingClientRect();
+
+                spotlight.style.top = (rect.top - 10) + 'px';
+                spotlight.style.left = (rect.left - 10) + 'px';
+                spotlight.style.width = (rect.width + 20) + 'px';
+                spotlight.style.height = (rect.height + 20) + 'px';
+
+                // Scroll element into view
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            function nextStep() {
+                if (currentStepIndex < tutorialSteps.length - 1) {
+                    showStep(currentStepIndex + 1);
+                } else {
+                    completeTutorial();
+                }
+            }
+            function previousStep() {
+                if (currentStepIndex > 0) {
+                    showStep(currentStepIndex - 1);
+                }
+            }
+            function skipTutorial() {
+                if (confirm('Are you sure you want to skip the magical tour?')) {
+                    completeTutorial();
+                }
+            }
+            function completeTutorial() {
+                wizardActive = false;
+
+                document.getElementById('wizardOverlay').classList.remove('active');
+                document.getElementById('wizardContainer').classList.remove('active');
+                document.getElementById('restartWizard').style.display = 'block';
+
+                // Save completion to localStorage
+                localStorage.setItem('grimoire_tutorial_completed', 'true');
+
+                // Show completion notification
+                showNotification('🎉 Tutorial Complete! You are now a master of the Grimoire!');
+            }
+            // Auto-start wizard on first visit
+            window.addEventListener('load', () => {
+                const tutorialCompleted = localStorage.getItem('grimoire_tutorial_completed');
+                if (!tutorialCompleted) {
+                    setTimeout(startWizard, 1000); // Start after 1 second
+                } else {
+                    document.getElementById('restartWizard').style.display = 'block';
+                }
+            });
+
+
+            (function () {
+                // UTIL: speak text and also update dialogue bubble
+                function speakAndShow(title, text) {
+                    if ('speechSynthesis' in window) {
+                        window.speechSynthesis.cancel();
+
+                        const utterance = new SpeechSynthesisUtterance(text || title || '');
+
+                        // ✅ Load saved voice selection
+                        const savedVoiceIndex = localStorage.getItem('grimoire_voice_index');
+                        const voices = window.speechSynthesis.getVoices();
+                        if (savedVoiceIndex && voices[savedVoiceIndex]) {
+                            utterance.voice = voices[savedVoiceIndex];
+                        }
+
+                        // ✅ Load saved rate & pitch
+                        const savedRate = localStorage.getItem('grimoire_voice_rate');
+                        const savedPitch = localStorage.getItem('grimoire_voice_pitch');
+                        utterance.rate = savedRate ? parseFloat(savedRate) : 0.95;
+                        utterance.pitch = savedPitch ? parseFloat(savedPitch) : 1.0;
+
+                        // ✅ Optional: adjust volume
+                        utterance.volume = 1;
+
+                        // Speak!
+                        window.speechSynthesis.speak(utterance);
+                    }
+
+                    // Also update the dialogue bubble text
+                    const titleNode = document.querySelector('.dialogue-title');
+                    const textNode = document.querySelector('.dialogue-text');
+                    if (titleNode) titleNode.textContent = title || '';
+                    if (textNode) textNode.textContent = text || '';
+                }
+
+                // spotlight helpers (uses existing .wizard-spotlight element)
+                const overlay = document.getElementById('wizardOverlay'); // .wizard-overlay parent
+                const spotlight = document.querySelector('.wizard-spotlight');
+                const container = document.getElementById('wizardContainer');
+
+                function showWizardUI() {
+                    if (overlay) overlay.classList.add('active');
+                    if (container) container.classList.add('active');
+                    // ensure restart visible hidden as appropriate
+                    const restart = document.getElementById('restartWizard');
+                    if (restart) restart.style.display = 'none';
+                }
+                function hideWizardUI() {
+                    if (overlay) overlay.classList.remove('active');
+                    if (container) container.classList.remove('active');
+                    // show restart
+                    const restart = document.getElementById('restartWizard');
+                    if (restart) restart.style.display = 'inline-block';
+                    removeHighlight();
+                }
+
+                function setSpotlightOnElement(el) {
+                    if (!spotlight) return;
+                    if (!el) {
+                        spotlight.style.display = 'none';
+                        return;
+                    }
+                    const rect = el.getBoundingClientRect();
+                    // include scroll offsets
+                    const top = rect.top + window.scrollY - 8;
+                    const left = rect.left + window.scrollX - 8;
+                    const width = rect.width + 16;
+                    const height = rect.height + 16;
+                    spotlight.style.display = 'block';
+                    spotlight.style.left = left + 'px';
+                    spotlight.style.top = top + 'px';
+                    spotlight.style.width = width + 'px';
+                    spotlight.style.height = height + 'px';
+                    // highlight CSS on element
+                    removeHighlight();
+                    try { el.classList.add('mentor-highlight'); } catch (e) { }
+                    // scroll smoothly so the element is visible
+                    try { el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' }); } catch (e) { }
+                }
+
+                function removeHighlight() {
+                    document.querySelectorAll('.mentor-highlight').forEach(n => n.classList.remove('mentor-highlight'));
+                    if (spotlight) spotlight.style.display = 'none';
+                }
+                const steps = [
+                    // 1. Focus Schedule section (already visible in your layout)
+                    { id: 'schedule_intro', openTab: 'schedule', selector: '.header', type: 'none', title: 'Schedule Potions', text: 'Welcome — we will start in the Schedule Potions section. I will walk you through the form fields one by one.' },
+
+                    // Form fields: users must click / focus each field
+                    { id: 'field_name', openTab: 'schedule', selector: '#medicineName', type: 'focus', title: 'Potion Name', text: 'Click the Potion Name field and type a name for your medicine, for example flying potion.' },
+
+                    { id: 'field_name', openTab: 'schedule', selector: '#email', type: 'focus', title: 'Email', text: 'Click the Email field and type a email id to receive ur reminder notifications at scheduled time' },
+
+                    { id: 'field_dosage', openTab: 'schedule', selector: '#dosage', type: 'focus', title: 'Dosage', text: 'Now click the Dosage field and enter how much to take, for example 500 mg.' },
+
+                    { id: 'field_time', openTab: 'schedule', selector: '#time', type: 'focus', title: 'First Dose Time', text: 'Select the time for the first dose. This sets the base time for scheduled reminders.' },
+
+                    { id: 'field_frequency', openTab: 'schedule', selector: '#frequency', type: 'focus', title: 'Frequency', text: 'Choose how often the medicine should repeat, for example once daily or every 8 hours.' },
+
+                    { id: 'field_duration', openTab: 'schedule', selector: '#duration', type: 'focus', title: 'Duration', text: 'Enter how many days the schedule should continue.' },
+
+                    { id: 'form_submit', openTab: 'schedule', selector: '#medicineForm button[type="submit"], #medicineForm .btn-primary, #medicineForm input[type="submit"]', type: 'submit', title: 'Add Medication', text: 'Great — click Add Medication to save the schedule. I will wait here until you submit the form.' },
+
+                    // 2. Current Elixir Schedule explanation - auto open and wait for user to click a schedule item or its actions
+                    { id: 'current_schedules', openTab: 'schedule', selector: '#medicineList', type: 'click', title: 'Current Elixir Schedules', text: 'This is the Current Elixir Schedules list. Click any item or its Edit / Remove buttons to inspect actions.' },
+
+                    // 3. User Dashboard - open and step through upcoming/past
+                    { id: 'user_dashboard_intro', openTab: 'userDashboard', selector: '#upcomingRemindersList', type: 'none', title: 'User Dashboard', text: 'Now I will open the User Dashboard to show upcoming and past reminders.' },
+                    { id: 'upcoming_reminders', openTab: 'userDashboard', selector: '#upcomingRemindersList', type: 'click', title: 'Upcoming Reminders', text: 'These are upcoming reminders. Click any reminder to view details or mark as taken.' },
+                    { id: 'past_reminders', openTab: 'userDashboard', selector: '#pastRemindersList', type: 'click', title: 'Past Reminders', text: 'This list shows past reminders and logs. Click an entry to inspect how it was recorded.' },
+
+                    // 4. Wellness Dashboard - open and step through charts
+                    { id: 'wellness_intro', openTab: 'dashboard', selector: '.dashboard-grid', type: 'none', title: 'Wellness Dashboard', text: 'Now I shall open the Wellness Dashboard to explain the charts and analytics.' },
+                    { id: 'adherence_trend', openTab: 'dashboard', selector: '#predictionCard', type: 'click', title: 'Adherence Prediction and Risk', text: 'This section uses your past medication history to forecast how likely you are to follow your schedule. It helps identify potential drop-offs and suggests actions to improve adherence.' },
+                    { id: 'adherence_chart', openTab: 'dashboard', selector: '#adherenceChart', type: 'click', title: 'Adherence Trends', text: 'This chart shows daily adherence percentages. Hover or click a bar to see the exact value.' },
+                    { id: 'missed_chart', openTab: 'dashboard', selector: '#missedVsTakenChart', type: 'click', title: 'Missed vs Taken', text: 'This donut chart compares taken versus missed doses for the day. Click the segments to inspect proportions.' },
+                    { id: 'trend_chart', openTab: 'dashboard', selector: '#trendLineChart', type: 'click', title: '30-day Progress', text: 'This line chart shows adherence progress over 30 days. Use it to spot long-term trends.' },
+
+                    // 5. Remaining: Streak and Clock/Notifications
+                    { id: 'streak', openTab: 'dashboard', selector: '#streakCounter', type: 'click', title: 'Streak Counter', text: 'This counter tracks consecutive days of adherence. Click it to learn tips for maintaining your streak.' },
+                    { id: 'clock_notify', openTab: 'dashboard', selector: '#clock', type: 'click', title: 'Clock & Notifications', text: 'The clock shows your local time. Notifications appear at the top-right — click to view recent notifications or snooze reminders.' },
+
+                    // final summary
+                    { id: 'complete', selector: '.header', type: 'none', title: 'Tutorial Complete', text: 'That concludes the guided tour. You can re-open this guide any time by clicking Start Guide Tour.' }
+                ];
+
+                // index & control refs
+                let idx = 0;
+                let waiting = false;
+                let currentListener = null;
+
+                // Hook page-level Next Prev Skip buttons (your next/prev/skip in wizard controls)
+                const nextBtn = document.querySelector('.wizard-btn-next') || document.querySelector('.wizard-btn-next, .wizard-btn-next');
+                const prevBtn = document.querySelector('.wizard-btn-prev');
+                const skipBtn = document.querySelector('.wizard-btn-skip');
+
+                // Next button manual override
+                if (nextBtn) nextBtn.addEventListener('click', () => {
+                    if (!waiting) goToStep(idx + 1);
+                    else {
+                        // if waiting, treat Next as forcing advance (useful fallback)
+                        removeWaitListeners();
+                        goToStep(idx + 1);
+                    }
+                });
+                if (prevBtn) prevBtn.addEventListener('click', () => {
+                    removeWaitListeners();
+                    goToStep(Math.max(0, idx - 1));
+                });
+                if (skipBtn) skipBtn.addEventListener('click', () => {
+                    // end tutorial
+                    removeWaitListeners();
+                    finishTutorial();
+                });
+
+                function removeWaitListeners() {
+                    waiting = false;
+                    if (currentListener && currentListener.remove) currentListener.remove();
+                    currentListener = null;
+                }
+
+                // wait helpers
+                function waitForClick(target, callback) {
+                    if (!target) return callback();
+                    waiting = true;
+                    const handler = function (e) {
+                        // if click inside target
+                        if (target.contains(e.target) || e.target === target) {
+                            removeWaitListeners();
+                            callback();
+                        }
+                    };
+                    document.addEventListener('click', handler, { capture: true });
+                    currentListener = { remove: () => document.removeEventListener('click', handler, { capture: true }) };
+                }
+
+                function waitForFocus(target, callback) {
+                    if (!target) return callback();
+                    waiting = true;
+                    const focusHandler = function (e) {
+                        if (e.target === target) {
+                            removeWaitListeners();
+                            callback();
+                        }
+                    };
+                    target.addEventListener('focus', focusHandler, { once: true });
+                    currentListener = { remove: () => target.removeEventListener('focus', focusHandler) };
+                }
+
+                function waitForSubmit(form, callback) {
+                    if (!form) return callback();
+                    waiting = true;
+                    const submitHandler = function (e) {
+                        // allow actual submit to proceed; we just detect it
+                        removeWaitListeners();
+                        // small delay to let form handling run (persist, render)
+                        setTimeout(() => callback(), 250);
+                    };
+                    form.addEventListener('submit', submitHandler, { once: true });
+                    currentListener = { remove: () => form.removeEventListener('submit', submitHandler) };
+                }
+
+                // If element absent, show bubble centered and continue to next with Next fallback
+                function safeQuery(selector) {
+                    if (!selector) return null;
+                    return document.querySelector(selector) || null;
+                }
+
+                // Main step runner
+                function goToStep(i) {
+                    removeWaitListeners();
+                    idx = i;
+                    if (idx < 0) idx = 0;
+                    if (idx >= steps.length) return finishTutorial();
+
+                    const step = steps[idx];
+
+                    // optionally open a tab
+                    if (step.openTab && typeof switchTab === 'function') {
+                        try { switchTab(step.openTab); } catch (e) { }
+                    }
+
+                    // show wizard UI
+                    showWizardUI();
+
+                    // find target
+                    const el = safeQuery(step.selector);
+
+                    // update progress UI if present
+                    const total = steps.length;
+                    const curStepNode = document.getElementById('currentStep');
+                    const totalNode = document.getElementById('totalSteps');
+                    const progressFill = document.getElementById('progressFill');
+                    if (curStepNode) curStepNode.textContent = Math.min(idx + 1, total);
+                    if (totalNode) totalNode.textContent = total;
+                    if (progressFill) progressFill.style.width = ((idx + 1) / total * 100) + '%';
+
+                    // set spotlight & highlight on target, or center bubble if no target
+                    if (el) {
+                        setSpotlightOnElement(el);
+                    } else {
+                        // center wizard bubble near header
+                        removeHighlight();
+                        const header = document.querySelector('.header') || document.body;
+                        setSpotlightOnElement(header);
+                    }
+
+                    // show title & text and speak
+                    speakAndShow(step.title || '', step.text || '');
+
+                    // decide how to wait
+                    if (step.type === 'click') {
+                        // wait for user to click on target or any child
+                        if (el) {
+                            waitForClick(el, () => goToStep(idx + 1));
+                        } else {
+                            // if missing, fallback to manual Next
+                            waiting = true;
+                        }
+                    } else if (step.type === 'focus') {
+                        if (el) {
+                            // focus instruction: also programmatically focus to guide them
+                            try { el.focus(); } catch (e) { }
+                            waitForFocus(el, () => goToStep(idx + 1));
+                        } else {
+                            waiting = true;
+                        }
+                    } else if (step.type === 'submit') {
+                        // selector should be the form
+                        const form = el || document.querySelector('#medicineForm');
+                        if (form) waitForSubmit(form, () => {
+                            // After submission, re-rendering likely changed list — small delay then continue
+                            setTimeout(() => goToStep(idx + 1), 400);
+                        });
+                        else waiting = true;
+                    } else if (step.type === 'any') {
+                        if (el) waitForClick(el, () => goToStep(idx + 1));
+                        else waiting = true;
+                    } else { // 'none' or unknown: no required interaction -> just show until user clicks Next
+                        waiting = true;
+                    }
+
+                    // ensure Next button label
+                    const nextBtnLocal = document.querySelector('.wizard-btn-next');
+                    if (nextBtnLocal) nextBtnLocal.textContent = (idx === steps.length - 1) ? 'Finish' : 'Next';
+                    // Prev button enable/disable
+                    const prevBtnLocal = document.querySelector('.wizard-btn-prev');
+                    if (prevBtnLocal) prevBtnLocal.disabled = idx === 0;
+                }
+                function finishTutorial() {
+                    // Final spotlight on header for cinematic finish
+                    const header = document.querySelector('.header') || document.body;
+                    setSpotlightOnElement(header);
+
+                    // Final message and TTS
+                    speakAndShow(
+                        '🎓 Master of the Grimoire!',
+                        'Congratulations, adventurer! You have now mastered every single section — from potion scheduling and reminders to adherence prediction and risk. May your adherence journey be legendary!'
+                    );
+
+                    // Delay closing to let message display
+                    setTimeout(() => {
+                        hideWizardUI();
+                        removeHighlight();
+                        const restart = document.getElementById('restartWizard');
+                        if (restart) restart.style.display = 'inline-block';
+
+                        // Final popup confirmation
+                        alert("🎉 Tutorial Complete! You are now the Master of the Grimoire!");
+                    }, 4000);
+                }
+
+
+
+
+                // start function exposed
+                window.startInteractiveTutorial = function () {
+                    // safety: cancel any ongoing speech
+                    if ('speechSynthesis' in window) try { window.speechSynthesis.cancel(); } catch (e) { }
+
+                    idx = 0;
+                    goToStep(0);
+                };
+
+                // auto-run once (if desired) - we will not auto-run by default; attach to existing Start button
+                // Hook your restart/start button if present
+                const startBtn = document.getElementById('restartWizard');
+                if (startBtn) startBtn.addEventListener('click', () => {
+                    startBtn.style.display = 'none';
+                    startInteractiveTutorial();
+                });
+
+                // Optionally show Sommon Wizard button if you have one (e.g., mentorSummonBtn)
+                const summonEl = document.getElementById('mentorSummonBtn') || document.getElementById('wizardSummonBtn');
+                if (summonEl) {
+                    summonEl.addEventListener('click', () => {
+                        startInteractiveTutorial();
+                    });
+                    // show it
+                    summonEl.style.display = 'inline-block';
+                }
+
+                // If wizard container Next/Prev are clicked, they are wired above to advance; but ensure keyboard accessibility:
+                document.addEventListener('keydown', (e) => {
+                    if (!overlay.classList.contains('active')) return;
+                    if (e.key === 'ArrowRight') {
+                        removeWaitListeners();
+                        goToStep(idx + 1);
+                    } else if (e.key === 'ArrowLeft') {
+                        removeWaitListeners();
+                        goToStep(Math.max(0, idx - 1));
+                    } else if (e.key === 'Escape') {
+                        removeWaitListeners();
+                        finishTutorial();
+                    }
+                });
+
+                // make overlay not block clicks on highlighted element(s)
+                if (overlay) overlay.style.pointerEvents = 'none';
+                if (spotlight) spotlight.style.pointerEvents = 'none';
+
+                // final: expose small API
+                window.__InteractiveTutorial = {
+                    start: startInteractiveTutorial,
+                    stop: finishTutorial
+                };
+
+            })();
+
+
+            (function () {
+                const select = document.getElementById('voiceSelect');
+                const rateInput = document.getElementById('rate');
+                const pitchInput = document.getElementById('pitch');
+                const rateVal = document.getElementById('rateVal');
+                const pitchVal = document.getElementById('pitchVal');
+                const sampleText = document.getElementById('sampleText');
+                const previewBtn = document.getElementById('previewBtn');
+                const stopBtn = document.getElementById('stopBtn');
+                const resetBtn = document.getElementById('resetVoice');
+                const info = document.getElementById('voiceInfo');
+
+                let voices = [];
+                let lastUtter = null;
+
+                function populateVoices() {
+                    voices = window.speechSynthesis.getVoices() || [];
+                    select.innerHTML = '';
+                    if (!voices.length) {
+                        const opt = document.createElement('option');
+                        opt.textContent = 'No voices available';
+                        opt.value = '';
+                        select.appendChild(opt);
+                        info.textContent = 'No TTS voices found — your browser may not support speechSynthesis or voices are still loading.';
+                        return;
+                    }
+
+                    // Fill the select
+                    voices.forEach((v, i) => {
+                        const opt = document.createElement('option');
+                        opt.value = i;
+                        opt.textContent = `${v.name} — ${v.lang}${v.default ? ' (default)' : ''}`;
+                        select.appendChild(opt);
+                    });
+
+                    // Restore saved choice
+                    const saved = localStorage.getItem('grimoire_voice_index');
+                    if (saved !== null && voices[saved]) {
+                        select.value = saved;
+                        info.textContent = `Loaded saved voice: ${voices[saved].name} (${voices[saved].lang})`;
+                    } else {
+                        // try to pick a human-like preference if available
+                        const pref = voices.findIndex(v => /natural|enhanced|google|samantha|alex|zira|female/i.test(v.name + ' ' + v.lang));
+                        if (pref >= 0) { select.value = pref; info.textContent = `Suggested voice: ${voices[pref].name} (${voices[pref].lang})`; }
+                        else { select.selectedIndex = 0; info.textContent = `Showing ${voices.length} available voices.`; }
+                    }
+                }
+
+                // browsers load voices asynchronously — listen for event and call populate
+                window.speechSynthesis.onvoiceschanged = () => {
+                    populateVoices();
+                };
+
+                // fallback: try populate after short delay (some browsers don't fire voiceschanged)
+                setTimeout(() => { if (!window.speechSynthesis.getVoices().length) populateVoices(); }, 600);
+
+                function speakPreview() {
+                    stopSpeaking();
+                    if (!('speechSynthesis' in window)) { alert('SpeechSynthesis not supported by this browser.'); return; }
+                    const txt = sampleText.value || sampleText.placeholder || 'Hello';
+                    const u = new SpeechSynthesisUtterance(txt);
+                    const idx = parseInt(select.value, 10);
+                    if (!isNaN(idx) && voices[idx]) u.voice = voices[idx];
+                    u.rate = parseFloat(rateInput.value || 1);
+                    u.pitch = parseFloat(pitchInput.value || 1);
+                    lastUtter = u;
+                    u.onend = () => { lastUtter = null; };
+                    u.onerror = () => { lastUtter = null; };
+                    window.speechSynthesis.cancel(); // stop any existing
+                    window.speechSynthesis.speak(u);
+                }
+
+                function stopSpeaking() {
+                    try { window.speechSynthesis.cancel(); } catch (e) { }
+                    lastUtter = null;
+                }
+
+                // save selection
+                select.addEventListener('change', () => {
+                    localStorage.setItem('grimoire_voice_index', select.value);
+                    const idx = parseInt(select.value, 10);
+                    if (voices[idx]) info.textContent = `Selected: ${voices[idx].name} (${voices[idx].lang})`;
+                });
+
+                rateInput.addEventListener('input', () => { rateVal.textContent = rateInput.value; localStorage.setItem('grimoire_voice_rate', rateInput.value); });
+                pitchInput.addEventListener('input', () => { pitchVal.textContent = pitchInput.value; localStorage.setItem('grimoire_voice_pitch', pitchInput.value); });
+
+                previewBtn.addEventListener('click', speakPreview);
+                stopBtn.addEventListener('click', stopSpeaking);
+
+                resetBtn.addEventListener('click', () => {
+                    localStorage.removeItem('grimoire_voice_index');
+                    localStorage.removeItem('grimoire_voice_rate');
+                    localStorage.removeItem('grimoire_voice_pitch');
+                    select.selectedIndex = 0;
+                    rateInput.value = 0.95; pitchInput.value = 1;
+                    rateVal.textContent = rateInput.value; pitchVal.textContent = pitchInput.value;
+                    info.textContent = 'Reset to defaults.';
+                });
+
+                // restore rate/pitch if saved
+                const savedRate = localStorage.getItem('grimoire_voice_rate');
+                const savedPitch = localStorage.getItem('grimoire_voice_pitch');
+                if (savedRate) { rateInput.value = savedRate; rateVal.textContent = savedRate; }
+                if (savedPitch) { pitchInput.value = savedPitch; pitchVal.textContent = savedPitch; }
+
+                // small helpful tip for devs: log voices to console
+                console.log('TTS helper loaded. Voices may appear shortly in the dropdown.');
+
+                // ensure voices are populated now if possible
+                setTimeout(() => populateVoices(), 500);
+            })();
+
+
+        </script>
+
+</body>
+
+</html>
