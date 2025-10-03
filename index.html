@@ -6,6 +6,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alchemist's Grand Grimoire</title>
     <style>
+        #startFlight {
+            background: linear-gradient(135deg, #7c3aed, #9333ea);
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: bold;
+            padding: 12px 28px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(147, 51, 234, 0.6);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            z-index: 99999;
+            margin: 20px auto;
+            display: block;
+        }
+
+        #startFlight:hover {
+            transform: scale(1.08);
+            box-shadow: 0 0 25px rgba(167, 139, 250, 0.9);
+        }
+
         .wizard-overlay {
             position: fixed;
             top: 0;
@@ -44,6 +66,21 @@
             animation: slideInRight 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
         }
 
+        .missed-btn {
+            background-color: #e74c3c;
+            color: #fff;
+            border: none;
+            padding: 6px 12px;
+            margin-top: 5px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: 0.2s;
+        }
+
+        .missed-btn:hover {
+            background-color: #c0392b;
+        }
+
         .wizard-container.active {
             display: block;
         }
@@ -68,7 +105,6 @@
         .wizard-avatar {
             font-size: 120px;
             text-align: center;
-            animation: wizardFloat 3s ease-in-out infinite, wizardEntrance 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
             filter: drop-shadow(0 10px 25px rgba(255, 179, 71, 0.5));
             cursor: pointer;
             transition: transform 0.3s ease;
@@ -103,6 +139,7 @@
         }
 
         .wizard-sparkles {
+            display: none;
             position: absolute;
             top: -20px;
             right: -10px;
@@ -131,9 +168,11 @@
             background: linear-gradient(135deg, rgba(74, 28, 64, 0.98), rgba(45, 27, 61, 0.98));
             border: 3px solid #ffb347;
             border-radius: 20px;
-            padding: 25px;
-            max-width: 450px;
+            padding: 15px;
+            max-width: 350px;
+            margin: 0 auto;
             position: relative;
+            text-align: center;
             box-shadow:
                 0 15px 35px rgba(0, 0, 0, 0.5),
                 0 0 20px rgba(255, 179, 71, 0.3),
@@ -160,14 +199,14 @@
 
         .dialogue-title {
             color: #ffb347;
-            font-size: 1.5rem;
+            font-size: 0.7rem !important;
             margin-bottom: 12px;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
 
         .dialogue-text {
             color: #f4e4c1;
-            font-size: 1.1rem;
+            font-size: 0.7rem !important;
             line-height: 1.6;
             font-family: 'Georgia', serif;
         }
@@ -231,6 +270,114 @@
             transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
             width: 0%;
             box-shadow: 0 0 10px rgba(255, 179, 71, 0.6);
+        }
+
+        #flyingWitch {
+            position: absolute;
+            ;
+            top: 350px;
+            left: 50px;
+            width: 80px;
+            z-index: 9999;
+            pointer-events: none;
+            transform: translateX(0);
+            opacity: 0;
+        }
+
+        #flyingWitch img {
+            width: 100px;
+            height: auto;
+        }
+
+        /* ✨ Flight animation */
+        #flyingWitch.fly {
+            animation: flyAcross 4s linear forwards;
+            opacity: 1;
+        }
+
+        @keyframes flyAcross {
+            0% {
+                transform: translate(0, 0) rotate(-10deg);
+                opacity: 1;
+            }
+
+            30% {
+                transform: translate(300px, -100px) rotate(-5deg);
+            }
+
+            60% {
+                transform: translate(600px, -250px) rotate(0deg);
+            }
+
+            100% {
+                transform: translate(120vw, -20vh) rotate(10deg);
+                opacity: 0.9;
+            }
+        }
+
+
+        /* Star overlay covers screen while witch flies */
+        #starOverlay {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 9998;
+            /* below flying witch (9999) so witch appears on top */
+            display: none;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+        }
+
+        /* Individual star */
+        #starOverlay .star {
+            position: absolute;
+            width: var(--s, 2px);
+            height: var(--s, 2px);
+            border-radius: 50%;
+            background: radial-gradient(circle, #ffffff 0%, #ffd700 60%, rgba(255, 200, 0, 0) 100%);
+            box-shadow: 0 0 calc(var(--s, 2px) * 6) rgba(255, 200, 80, 0.9);
+            transform-origin: center;
+            opacity: 0;
+            animation: starTwinkle var(--d, 2.8s) ease-in-out infinite;
+        }
+
+        /* Twinkle animation (randomized per star by --d) */
+        @keyframes starTwinkle {
+            0% {
+                opacity: 0;
+                transform: scale(0.6);
+            }
+
+            40% {
+                opacity: 1;
+                transform: scale(1.0);
+            }
+
+            80% {
+                opacity: 0.6;
+                transform: scale(0.9);
+            }
+
+            100% {
+                opacity: 0;
+                transform: scale(0.6);
+            }
+        }
+
+
+        @keyframes fall {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(80vh) scale(0.2);
+                opacity: 0;
+            }
         }
 
         .wizard-buttons {
@@ -526,11 +673,11 @@
         }
 
         .btn {
-            padding: 12px 25px;
+            padding: 5px 5px;
             border: none;
-            border-radius: 10px;
+            border-radius: 20px;
             cursor: pointer;
-            font-size: 1rem;
+            font-size: 0.8rem;
             font-weight: bold;
             transition: all 0.3s ease;
             text-transform: uppercase;
@@ -783,6 +930,7 @@
             }
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -792,11 +940,22 @@
             <div id="wizardOverlay" class="wizard-overlay">
                 <div class="wizard-spotlight"></div>
             </div>
+            <!-- 🧙‍♀️ Flying Witch -->
+            <div id="flyingWitch">
+                <img src="18fe33bb-e7da-451a-ac22-5c3ee5bfdd63.png" alt="Flying Witch">
+            </div>
+
+            <!-- ✨ Sparkle Container -->
+            <div id="starOverlay"></div>
+
+
+            <audio id="witchSound" src="witch-sound.mp3" preload="auto"></audio>
+
             <div id="wizardContainer" class="wizard-container">
                 <!-- Wizard Character -->
                 <div class="wizard-character">
-                    <div class="wizard-avatar">
-                        🧙‍♂️
+                    <div id="witchAvatar" class="wizard-avatar">
+                        <img src="witch.png" alt="Witch Guide" style="max-width:180px; height:auto;">
                     </div>
                     <div class="wizard-sparkles">✨</div>
                 </div>
@@ -835,10 +994,10 @@
         </div>
 
         <div class="nav-tabs">
-
             <button class="nav-tab active" onclick="switchTab('schedule')">📋 Schedule Potions</button>
             <button class="nav-tab" onclick="switchTab('userDashboard')">📅 User Dashboard</button>
             <button class="nav-tab" onclick="switchTab('dashboard')">📊 Wellness Dashboard</button>
+            <button class="nav-tab" onclick="switchTab('streakTab')">🔥 Streak</button>
 
             <div id="clock" style="
               position: fixed;
@@ -854,10 +1013,7 @@
               z-index: 1000;
               "></div>
         </div>
-
-        <div id="streakCounter" style="margin: 15px 0; font-size: 1.2rem; font-weight: bold; color: #ffb347;">
-            🔥 Current Streak: 0 days
-        </div>
+        <button id="startFlight">🪄 Start Witch Flight</button>
 
         <div id="schedule" class="tab-content active">
             <div class="card">
@@ -922,6 +1078,10 @@
                     <div class="stat-label">Active Elixirs</div>
                 </div>
                 <div class="stat-card">
+                    <div class="stat-number" id="totalDosesToday">0</div>
+                    <div class="stat-label">Total Doses Today</div>
+                </div>
+                <div class="stat-card">
                     <div class="stat-number" id="takenToday">0</div>
                     <div class="stat-label">Taken Today</div>
                 </div>
@@ -935,18 +1095,64 @@
                 </div>
             </div>
 
+
             <div class="card" id="predictionCard" style="margin-bottom:20px;">
                 <h3 style="color: #ffb347; margin-bottom: 12px;">🤖 Adherence Predictions & Risk</h3>
                 <div id="predictionPanel">
                     <p style="color:#e6d3a3;">Analyzing adherence patterns...</p>
                 </div>
             </div>
+            <!-- Enhanced Dashboard Controls -->
+            <div class="card" id="enhancedControls" style="margin-bottom:20px;">
+                <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                    <label style="color:#e6d3a3;">Range:
+                        <select id="edRangeSelect">
+                            <option value="7">Last 7 days</option>
+                            <option value="14">Last 14 days</option>
+                            <option value="30">Last 30 days</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </label>
 
+                    <label id="customRangeInputs" style="display:none; color:#e6d3a3;">
+                        From: <input type="date" id="edFrom"> To: <input type="date" id="edTo">
+                    </label>
+
+                    <label style="color:#e6d3a3;">Medicine:
+                        <select id="edMedicineFilter">
+                            <option value="">All</option>
+                        </select>
+                    </label>
+
+                    <button class="btn btn-primary" id="edApplyBtn">Apply</button>
+                    <button class="btn" id="edRefreshBtn">Refresh</button>
+                    <button class="btn btn-danger" id="edExportBtn">Export CSV</button>
+                </div>
+            </div>
+
+            <!-- Missed Dose History table -->
+            <div class="card" id="missedHistoryCard" style="margin-bottom:20px;">
+                <h3 style="color:#ffb347; margin-bottom:10px;">🗂 Missed Dose History</h3>
+                <div style="overflow:auto; max-height:260px;">
+                    <table id="edHistoryTable" style="width:100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="text-align:left; border-bottom:1px solid rgba(255,179,71,0.2);">
+                                <th style="padding:8px;">Date</th>
+                                <th style="padding:8px;">Medicine</th>
+                                <th style="padding:8px;">Status</th>
+                                <th style="padding:8px;">Logged At</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
 
 
             <div class="chart-container">
                 <h3 style="color: #ffb347; margin-bottom: 15px;">📈 Adherence Trends Over Time</h3>
-                <canvas id="adherenceChart"></canvas>
+                <canvas id="adherenceChartMain"></canvas>
+
             </div>
 
             <div class="chart-container">
@@ -983,7 +1189,35 @@
             </div>
 
         </div>
+        <!-- 🔥 Streak Dashboard Tab -->
+        <div id="streakTab" class="tab-content">
+            <div class="card">
+                <h2 style="color:#ffb347; margin-bottom:20px;">🔥 Streak Performance</h2>
+                <div class="dashboard-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="currentStreak">0 days</div>
+                        <div class="stat-label">Current Streak</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="longestStreak">0 days</div>
+                        <div class="stat-label">Longest Streak</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalDaysTracked">0</div>
+                        <div class="stat-label">Total Days Tracked</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="perfectDays">0</div>
+                        <div class="stat-label">Perfect Adherence Days</div>
+                    </div>
+                </div>
 
+                <div class="chart-container">
+                    <h3 style="color: #ffb347; margin-bottom: 15px;">📅 Streak Trend Over Time</h3>
+                    <canvas id="streakTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
 
         <div id="notification" class="notification">
             <span id="notificationText"></span>
@@ -992,39 +1226,16 @@
                 Snooze 15 min
             </button>
         </div>
-        <!-- Voice picker UI -->
-        <div id="voicePicker"
-            style="max-width:650px;margin:16px;padding:12px;border-radius:10px;border:1px solid #eee;">
-            <h3 style="margin:0 0 8px 0">Wizard voice settings</h3>
-
-            <label for="voiceSelect">Choose voice</label><br>
-            <select id="voiceSelect" style="width:100%;padding:8px;margin:6px 0;"></select>
-
-            <div style="display:flex;gap:8px;align-items:center;margin:8px 0;">
-                <label style="white-space:nowrap">Rate</label>
-                <input id="rate" type="range" min="0.6" max="1.4" step="0.05" value="0.95" />
-                <span id="rateVal">0.95</span>
-                <label style="margin-left:12px;white-space:nowrap">Pitch</label>
-                <input id="pitch" type="range" min="0.6" max="1.6" step="0.05" value="1" />
-                <span id="pitchVal">1.0</span>
-            </div>
-
-            <label for="sampleText">Preview text</label>
-            <textarea id="sampleText" rows="3"
-                style="width:100%;padding:8px;margin:6px 0;">Hello — I am your mentor. Nice to meet you!</textarea>
-
-            <div style="display:flex;gap:8px;margin-top:8px;">
-                <button id="previewBtn" style="padding:8px 12px;">🔊 Preview Voice</button>
-                <button id="stopBtn" style="padding:8px 12px;">⏹ Stop</button>
-                <button id="resetVoice" style="padding:8px 12px;margin-left:auto;">Reset to default</button>
-            </div>
-
-            <div id="voiceInfo" style="margin-top:10px;color:#666;font-size:13px;"></div>
-        </div>
-
-
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script>
+            // ✅ Global fallback email (replace with your own)
+            const DEFAULT_EMAIL = "thakur29aayush@example.com";
+
+            // ✅ Master email variable (always used throughout the app)
+            function getUserEmail() {
+                return (document.getElementById("email")?.value || "").trim() || DEFAULT_EMAIL;
+            }
+
+
             let medicines = JSON.parse(localStorage.getItem('medicines') || '[]');
             let doseLogs = JSON.parse(localStorage.getItem('doseLogs') || '[]');
             let currentEditingId = null;
@@ -1048,28 +1259,17 @@
             });
 
             function switchTab(tabName) {
-
-                document.querySelectorAll('.tab-content').forEach(tab => {
-                    tab.classList.remove('active');
-                });
-
-                document.querySelectorAll('.nav-tab').forEach(tab => {
-                    tab.classList.remove('active');
-                });
-
+                document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+                document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
 
                 document.getElementById(tabName).classList.add('active');
-
                 event.target.classList.add('active');
 
-                if (tabName === 'dashboard') {
-                    updateDashboard();
-                }
-                if (tabName === 'userDashboard') {
-                    renderUserDashboard();
-                }
-
+                if (tabName === 'dashboard') updateDashboard();
+                if (tabName === 'userDashboard') renderUserDashboard();
+                if (tabName === 'streakTab') updateStreakDisplay(); // ✅ load streak page
             }
+
 
             function renderMedicines() {
                 const container = document.getElementById('medicineList');
@@ -1102,6 +1302,7 @@
                         <button class="btn btn-primary" onclick="editMedicine('${medicine.id}')">✏️ Edit</button>
                         <button class="btn btn-danger" onclick="deleteMedicine('${medicine.id}')">🗑️ Remove</button>
                         <button class="btn btn-primary" onclick="markAsTaken('${medicine.id}')">✅ Mark Taken</button>
+                        <button class="missed-btn" onclick="markAsMissed('${medicine.id}')">❌ Mark as Missed</button>
                     </div>
                 </div>
             `).join('');
@@ -1138,110 +1339,215 @@
                 }
             }
 
-            function markAsTaken(id) {
-                const medicine = medicines.find(med => med.id === id);
+            async function markAsTaken(id) {
+                const medicine = medicines.find(m => m.id === id);
                 if (!medicine) return;
 
-                const now = new Date();
-                const today = now.toDateString();
+                const today = new Date().toDateString();
 
-                const lastTaken = doseLogs
-                    .filter(log => log.medicineId === id && log.status === 'taken')
-                    .sort((a, b) => new Date(b.takenAt) - new Date(a.takenAt))[0];
-
-                let nextAllowedTime = null;
-                if (lastTaken) {
-                    const lastDate = new Date(lastTaken.takenAt);
-                    nextAllowedTime = new Date(lastDate);
-
-                    switch (medicine.frequency) {
-                        case "onceDaily":
-                            nextAllowedTime.setDate(lastDate.getDate() + 1);
-                            break;
-                        case "twiceDaily":
-                            nextAllowedTime.setHours(lastDate.getHours() + 12);
-                            break;
-                        case "every8h":
-                            nextAllowedTime.setHours(lastDate.getHours() + 8);
-                            break;
-                        case "everyOtherDay":
-                            nextAllowedTime.setDate(lastDate.getDate() + 2);
-                            break;
-                        case "weekly":
-                            nextAllowedTime.setDate(lastDate.getDate() + 7);
-                            break;
-                    }
-                }
-
-                if (nextAllowedTime && now < nextAllowedTime) {
-                    showNotification(
-                        `⏳ Too early! Next dose of ${medicine.name} is allowed after ${nextAllowedTime.toLocaleString()}`,
-                        6000
-                    );
+                // ✅ Prevent double marking (taken or missed)
+                const alreadyLoggedToday = doseLogs.some(
+                    l => l.medicineId === id && new Date(l.takenAt).toDateString() === today
+                );
+                if (alreadyLoggedToday) {
+                    showNotification(`⚠️ ${medicine.name} is already logged for today.`);
                     return;
                 }
 
                 const log = {
                     medicineId: id,
                     medicineName: medicine.name,
-                    takenAt: now.toISOString(),
-                    status: 'taken'
+                    email: document.getElementById("email").value || medicine.email || DEFAULT_EMAIL,
+                    status: "taken",
+                    takenAt: new Date().toISOString(),
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
                 };
-                doseLogs.push(log);
-                localStorage.setItem('doseLogs', JSON.stringify(doseLogs));
-                renderUserDashboard();
-                updateUpcomingDoses();
-                checkDueMedicines();
-                showNotification(`✨ ${medicine.name} marked as taken!`);
-                updateStreakDisplay();
+
+                try {
+                    const res = await fetch("http://localhost:3000/logDose", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(log)
+                    });
+
+                    const data = await res.json();
+
+                    if (data.success) {
+                        showNotification(`✅ ${medicine.name} marked as taken!`);
+
+                        doseLogs.push(log);
+                        localStorage.setItem("doseLogs", JSON.stringify(doseLogs));
+
+                        const btn = document.querySelector(`button[onclick="markAsTaken('${medicine.id}')"]`);
+                        if (btn) {
+                            btn.textContent = "✅ Taken Logged!";
+                            btn.disabled = true;
+                            btn.style.backgroundColor = "#2ecc71";
+                        }
+
+                        renderUserDashboard();
+                        updateUpcomingDoses();
+                        loadAdherenceDashboard(log.email);
+                        renderMissedDoseHistoryTable();
+                        calculateDailyAdherence(); // ✅ Refresh adherence stats
+                        setTimeout(updateDashboard, 100);
 
 
+                    } else {
+                        showNotification(`⚠️ Failed to mark ${medicine.name} as taken.`);
+                    }
+                } catch (err) {
+                    console.error("Failed to mark dose as taken:", err);
+                    showNotification("⚠️ An error occurred while logging the dose.");
+                }
             }
-            function updateDashboard() {
-                const today = new Date().toDateString();
 
-                let totalMedicines = 0;
-                let takenToday = 0;
-                let missedToday = 0;
+
+            function updateDashboard() {
+                medicines = JSON.parse(localStorage.getItem("medicines")) || [];
+                const today = new Date().toDateString();
+                let totalDoses = 0;
 
                 medicines.forEach(med => {
-                    totalMedicines++;
-                    const taken = doseLogs.some(log =>
-                        log.medicineId === med.id &&
-                        new Date(log.takenAt).toDateString() === today
-                    );
+                    const medStartDate = new Date(med.startDate || med.addedAt || med.createdAt || Date.now());
+                    if (new Date().getTime() < medStartDate.getTime()) return;
 
-                    if (taken) {
-                        takenToday++;
-                    } else {
-                        const [hours, minutes] = med.time.split(':');
-                        const doseTime = new Date();
-                        doseTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-
-                        if (doseTime < new Date()) {
-                            missedToday++;
-                        }
+                    switch (med.frequency) {
+                        case "onceDaily": totalDoses += 1; break;
+                        case "twiceDaily": totalDoses += 2; break;
+                        case "every8h": totalDoses += 3; break;
+                        default: totalDoses += 1;
                     }
                 });
 
-                const adherenceRate = totalMedicines > 0 ?
-                    Math.round((takenToday / totalMedicines) * 100) : 0;
+                const takenToday = doseLogs.filter(
+                    l => new Date(l.takenAt).toDateString() === today && l.status === "taken"
+                ).length;
 
-                document.getElementById('totalMedicines').textContent = totalMedicines;
+                const missedToday = doseLogs.filter(
+                    l => new Date(l.takenAt).toDateString() === today && l.status === "missed"
+                ).length;
+
+                const adherenceRate = totalDoses > 0 ? Math.round((takenToday / totalDoses) * 100) : 0;
+
+                document.getElementById('totalMedicines').textContent = medicines.length;
+                document.getElementById('totalDosesToday').textContent = totalDoses;
                 document.getElementById('takenToday').textContent = takenToday;
                 document.getElementById('missedToday').textContent = missedToday;
-                document.getElementById('adherenceRate').textContent = adherenceRate + '%';
+                document.getElementById('adherenceRate').textContent = `${adherenceRate}%`;
 
                 updateWellnessRate(adherenceRate);
                 updateUpcomingDoses();
                 renderAdherenceChart();
                 renderMissedVsTakenChart();
                 renderTrendLineChart();
+                renderMissedDoseHistoryTable();
+                calculateDailyAdherence();
+                updateStreakDisplay?.();
+                updateAdherencePredictionAndRisk();
+
             }
+            function updateAdherencePredictionAndRisk() {
+                const panel = document.getElementById("predictionPanel");
+                if (!panel) return;
+
+                const { adherenceRate, missedToday, totalDoses } = calculateDailyAdherence();
+
+                // ✅ Handle case where no data yet
+                if (totalDoses === 0) {
+                    panel.innerHTML = `
+            <div style="color:#e6d3a3; font-size:1rem; line-height:1.6;">
+                📊 No data available yet. Add medicines and log doses to see predictions.
+            </div>
+        `;
+                    return;
+                }
+
+                let predictionText = "";
+                let riskLevel = "";
+
+                // ✅ Risk prediction logic
+                if (adherenceRate >= 90) {
+                    predictionText = "🧙‍♂️ Excellent adherence! Future adherence likely to remain high.";
+                    riskLevel = "🟢 Low Risk";
+                } else if (adherenceRate >= 70) {
+                    predictionText = "✨ Good adherence, but occasional misses could affect outcomes.";
+                    riskLevel = "🟡 Moderate Risk";
+                } else if (adherenceRate >= 50) {
+                    predictionText = "⚠️ Adherence is slipping. Increased risk of treatment inefficacy.";
+                    riskLevel = "🟠 High Risk";
+                } else {
+                    predictionText = "🚨 Critical adherence risk! Immediate intervention recommended.";
+                    riskLevel = "🔴 Severe Risk";
+                }
+
+                // ✅ Predict next 7 days adherence (simple forecast)
+                const predictedNext7Days = Math.max(0, Math.min(100, Math.round(adherenceRate - 5)));
+
+                panel.innerHTML = `
+        <div style="color:#e6d3a3; font-size:1rem; line-height:1.6;">
+            <p>${predictionText}</p>
+            <p><strong>Risk Level:</strong> ${riskLevel}</p>
+            <p><strong>Missed Today:</strong> ${missedToday} dose(s)</p>
+            <p><strong>Predicted adherence next 7 days:</strong> ${predictedNext7Days}%</p>
+        </div>
+    `;
+            }
+
+
+            function calculateDailyAdherence() {
+                let totalDoses = 0;
+                let takenToday = 0;
+                let missedToday = 0;
+
+                // ✅ 1. Count how many doses are scheduled for today based on frequency
+                medicines.forEach(med => {
+                    // Skip invalid or incomplete entries
+                    if (!med || !med.frequency) return;
+
+                    switch (med.frequency) {
+                        case "onceDaily":
+                            totalDoses += 1;
+                            break;
+                        case "twiceDaily":
+                            totalDoses += 2;
+                            break;
+                        case "every8h":
+                            totalDoses += 3;
+                            break;
+                        default:
+                            totalDoses += 1;
+                    }
+                });
+
+                // ✅ 2. Count how many doses were taken or missed today
+                const todayString = new Date().toDateString();
+                doseLogs.forEach(log => {
+                    if (!log || !log.takenAt) return; // skip invalid entries
+                    const logDate = new Date(log.takenAt).toDateString();
+                    if (logDate === todayString) {
+                        if (log.status === "taken") takenToday++;
+                        if (log.status === "missed") missedToday++;
+                    }
+                });
+
+                // ✅ 3. Calculate adherence rate (percentage)
+                const adherenceRate = totalDoses > 0 ? Math.round((takenToday / totalDoses) * 100) : 0;
+
+                // ✅ 4. Return all data for other functions (prediction, charts, etc.)
+                return {
+                    totalDoses,
+                    takenToday,
+                    missedToday,
+                    adherenceRate
+                };
+            }
+
             let adherenceChartInstance = null;
 
             function renderAdherenceChart() {
-                const ctx = document.getElementById('adherenceChart').getContext('2d');
+                const ctx = document.getElementById('adherenceChartMain').getContext('2d');
+
 
                 const labels = [];
                 const data = [];
@@ -1289,32 +1595,32 @@
             }
 
             function renderMissedVsTakenChart() {
-                const ctx = document.getElementById('missedVsTakenChart').getContext('2d');
+                const ctx = document.getElementById("missedVsTakenChart").getContext("2d");
                 const today = new Date().toDateString();
 
-                const taken = doseLogs.filter(log => new Date(log.takenAt).toDateString() === today).length;
-                const missed = medicines.length > 0 ? medicines.length - taken : 0;
+                const taken = doseLogs.filter(l => new Date(l.takenAt).toDateString() === today && l.status === 'taken').length;
+                const missed = doseLogs.filter(l => new Date(l.takenAt).toDateString() === today && l.status === 'missed').length;
 
                 if (window.missedVsTakenChartInstance) {
                     window.missedVsTakenChartInstance.destroy();
                 }
 
                 window.missedVsTakenChartInstance = new Chart(ctx, {
-                    type: 'doughnut',
+                    type: "doughnut",
                     data: {
-                        labels: ['Taken', 'Missed'],
+                        labels: ["Taken", "Missed"],
                         datasets: [{
                             data: [taken, missed],
-                            backgroundColor: ['#4ecdc4', '#eb4d4b'],
-                            borderColor: '#fff',
-                            borderWidth: 2
-                        }]
+                            backgroundColor: ["#4CAF50", "#F44336"],
+                        }],
                     },
                     options: {
+                        responsive: true,
                         plugins: {
-                            legend: { position: 'bottom' }
-                        }
-                    }
+                            legend: { position: "bottom" },
+                            title: { display: true, text: "Today's Doses" },
+                        },
+                    },
                 });
             }
 
@@ -1550,7 +1856,6 @@
                 }
             }
 
-
             function showNotification(message, duration = 4000, options = {}) {
                 const notification = document.getElementById('notification');
                 const notificationText = document.getElementById('notificationText');
@@ -1578,34 +1883,147 @@
                     }, 800);
                 }, duration);
             }
+            async function markAsMissed(id) {
+                const medicine = medicines.find(m => m.id === id);
+                if (!medicine) return;
+
+                const today = new Date().toDateString();
+
+                // ✅ Prevent double marking (taken or missed)
+                const alreadyLoggedToday = doseLogs.some(
+                    l => l.medicineId === id && new Date(l.takenAt).toDateString() === today
+                );
+                if (alreadyLoggedToday) {
+                    showNotification(`⚠️ ${medicine.name} is already logged for today.`);
+                    return;
+                }
+
+                // ✅ Check start date
+                const medStartDate = new Date(medicine.startDate || medicine.addedAt || medicine.createdAt || Date.now());
+
+                // ✅ Find today's scheduled dose time (if you store times in medicine.schedule or doses[])
+                let scheduledTime = null;
+                if (medicine.doses && medicine.doses.length > 0) {
+                    const todayDose = medicine.doses.find(d => new Date(d.time).toDateString() === today);
+                    if (todayDose) {
+                        scheduledTime = new Date(todayDose.time).getTime();
+                    }
+                }
+
+                // 🛑 If no scheduled time is found, fallback: assume morning 9AM (or current time - 2h check)
+                if (!scheduledTime) {
+                    scheduledTime = new Date();
+                    scheduledTime.setHours(9, 0, 0, 0); // fallback default
+                }
+
+                // ✅ Time-based validation
+                const now = Date.now();
+                if (scheduledTime > now) {
+                    showNotification("⏱ You cannot mark this dose as missed before its scheduled time.");
+                    return;
+                }
+
+                // 🛑 Ensure medicine existed before scheduled time
+                if (scheduledTime < medStartDate.getTime()) {
+                    showNotification("⚠️ This dose is before the medicine was added, so it cannot be marked missed.");
+                    return;
+                }
+
+                // ✅ Allow marking only if 2 hours have passed since scheduled time
+                if (now < scheduledTime + 2 * 60 * 60 * 1000) {
+                    showNotification("⏱ Please wait until 2 hours after the scheduled time to mark as missed.");
+                    return;
+                }
+
+                // ✅ Create missed log object
+                const log = {
+                    medicineId: id,
+                    medicineName: medicine.name,
+                    email: document.getElementById("email").value || medicine.email || DEFAULT_EMAIL,
+                    status: "missed",
+                    takenAt: new Date().toISOString(),
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                };
+
+                try {
+                    const res = await fetch("http://localhost:3000/markMissed", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(log)
+                    });
+
+                    const data = await res.json();
+                    if (data.success) {
+                        showNotification(`❌ ${medicine.name} marked as missed!`);
+                        doseLogs.push(log);
+                        localStorage.setItem("doseLogs", JSON.stringify(doseLogs));
+
+                        const btn = document.querySelector(`button[onclick="markAsMissed('${medicine.id}')"]`);
+                        if (btn) {
+                            btn.textContent = "❌ Missed Logged!";
+                            btn.disabled = true;
+                            btn.style.backgroundColor = "#c0392b";
+                        }
+
+                        renderUserDashboard();
+                        updateUpcomingDoses();
+                        loadAdherenceDashboard(log.email);
+                        renderMissedDoseHistoryTable();
+                        calculateDailyAdherence(); // ✅ Refresh adherence stats
+                        setTimeout(updateDashboard, 100);
+                    }
+                } catch (err) {
+                    console.error("Failed to mark missed dose:", err);
+                    showNotification("⚠️ An error occurred while logging missed dose.");
+                }
+            }
 
             function checkDueMedicines() {
-                const now = new Date();
+                const now = Date.now();
 
-                medicines.forEach(medicine => {
-                    const [hours, minutes] = medicine.time.split(':');
+                medicines.forEach(med => {
+                    if (!med.time) return;
+
+                    const [h, m] = med.time.split(":");
                     const scheduled = new Date();
-                    scheduled.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+                    scheduled.setHours(parseInt(h), parseInt(m), 0, 0);
 
-                    const diff = Math.abs(now - scheduled);
+                    const medStartDate = new Date(med.startDate || med.addedAt || med.createdAt || Date.now());
+                    const scheduledTime = scheduled.getTime();
 
+                    // 🛑 Ignore doses before medicine was added or future doses
+                    if (scheduledTime < medStartDate.getTime() || scheduledTime > now) return;
+
+                    // ✅ Check if already logged today
+                    const alreadyLogged = doseLogs.some(
+                        l => l.medicineId === med.id && new Date(l.takenAt).toDateString() === new Date().toDateString()
+                    );
+
+                    // ✅ Auto-mark as missed if 2+ hours have passed and not taken/missed yet
+                    if (!alreadyLogged && now > scheduledTime + 2 * 60 * 60 * 1000) {
+                        markAsMissed(med.id);
+                    }
+
+                    // 🔔 Reminder notification if within 1 min of scheduled time
+                    const diff = Math.abs(now - scheduledTime);
                     if (diff <= 60000) {
                         showNotification(
-                            `🔔 Time for ${medicine.name}! Dosage: ${medicine.dosage}`,
+                            `🔔 Time for ${med.name}! Dosage: ${med.dosage}`,
                             8000,
-                            { allowSnooze: true, medicineId: medicine.id }
+                            { allowSnooze: true, medicineId: med.id }
                         );
 
                         if ('Notification' in window && Notification.permission === 'granted') {
-                            new Notification('🎪 Alchemist\'s Reminder', {
-                                body: `Time for ${medicine.name}! Dosage: ${medicine.dosage}`,
+                            new Notification('🎪 Alchemist Reminder', {
+                                body: `Time for ${med.name}! Dosage: ${med.dosage}`,
                                 icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🧪</text></svg>'
                             });
                         }
                     }
                 });
-
             }
+
+
 
             function scheduleSnoozeReminder(medicineId, minutes) {
                 const med = medicines.find(m => m.id === medicineId);
@@ -1719,75 +2137,42 @@
                 }
             }
 
-            function computeMedicineRisk(med) {
-                const now = new Date();
-                const msInDay = 24 * 60 * 60 * 1000;
-                const logs = doseLogs.filter(l => l.medicineId === med.id);
-                const totalLogged = logs.length;
-                const missedCount = logs.filter(l => l.status === 'missed').length;
-                const missRate = totalLogged > 0 ? (missedCount / totalLogged) : 0;
-                const daysWindow = 14;
-                const cutoffRecent = new Date(now.getTime() - daysWindow * msInDay);
-                const recentMisses = logs.filter(l => new Date(l.takenAt) >= cutoffRecent && l.status === 'missed').length;
-                const lastTaken = logs.filter(l => l.status === 'taken').sort((a, b) => new Date(b.takenAt) - new Date(a.takenAt))[0];
-                let hoursSinceLastTaken = Infinity;
-                if (lastTaken) {
-                    hoursSinceLastTaken = (now - new Date(lastTaken.takenAt)) / (1000 * 60 * 60);
+            function updateStreakDisplay() {
+                const today = new Date().toDateString();
+                let streak = 0;
+                let currentDate = new Date();
+
+                while (true) {
+                    const dateStr = currentDate.toDateString();
+
+                    // ✅ Calculate expected doses for that date
+                    let expectedDoses = 0;
+                    medicines.forEach(med => {
+                        const medStartDate = new Date(med.startDate || med.addedAt || med.createdAt || Date.now());
+                        if (currentDate.getTime() < medStartDate.getTime()) return;
+
+                        switch (med.frequency) {
+                            case "onceDaily": expectedDoses += 1; break;
+                            case "twiceDaily": expectedDoses += 2; break;
+                            case "every8h": expectedDoses += 3; break;
+                            default: expectedDoses += 1;
+                        }
+                    });
+
+                    const taken = doseLogs.filter(
+                        l => new Date(l.takenAt).toDateString() === dateStr && l.status === "taken"
+                    ).length;
+
+                    // ❌ If not all doses taken that day, streak ends
+                    if (taken < expectedDoses) break;
+
+                    streak++;
+                    currentDate.setDate(currentDate.getDate() - 1); // go back 1 day
                 }
 
-                const missTimeBuckets = {};
-                logs.filter(l => l.status === 'missed').forEach(l => {
-                    const d = new Date(l.takenAt);
-                    const key = d.getHours() + ':' + d.getMinutes();
-                    missTimeBuckets[key] = (missTimeBuckets[key] || 0) + 1;
-                });
-                const missTimeMax = Object.keys(missTimeBuckets).length ? Math.max(...Object.values(missTimeBuckets)) : 0;
-                let expected = 0;
-                if (med.createdAt && med.duration) {
-                    try {
-                        const created = new Date(med.createdAt);
-                        const elapsedDays = Math.max(1, Math.floor((now - created) / msInDay));
-                        const freqHours = frequencyToHours(med.frequency || "onceDaily");
-                        expected = Math.round(elapsedDays * (24 / freqHours));
-                    } catch (e) {
-                        expected = 0;
-                    }
-                }
-
-                const missedRelative = expected > 0 ? Math.min(1, missedCount / expected) : missRate;
-                const recentScore = Math.min(1, recentMisses / Math.max(1, daysWindow / Math.max(1, frequencyToHours(med.frequency || 'onceDaily') / 24)));
-                const hoursScale = Math.min(1, hoursSinceLastTaken / (frequencyToHours(med.frequency || 'onceDaily') * 2 + 1)); // if >2x freq, risk
-                const timeConcentration = Math.min(1, missTimeMax / Math.max(1, Math.ceil(totalLogged * 0.3)));
-
-                let risk = (
-                    recentScore * 0.35 +
-                    missRate * 0.25 +
-                    missedRelative * 0.15 +
-                    hoursScale * 0.15 +
-                    timeConcentration * 0.10
-                );
-
-                risk = Math.round(Math.min(1, risk) * 100);
-
-                const reasons = [];
-                if (recentMisses > 0) reasons.push(`${recentMisses} miss${recentMisses > 1 ? 'es' : ''} in last ${daysWindow}d`);
-                if (missRate > 0.1) reasons.push(`overall miss rate ${(missRate * 100).toFixed(0)}%`);
-                if (hoursSinceLastTaken !== Infinity && hoursSinceLastTaken > frequencyToHours(med.frequency || 'onceDaily') * 1.5) reasons.push(`last taken ${Math.round(hoursSinceLastTaken)}h ago`);
-                if (timeConcentration > 0.5) reasons.push('misses cluster at same time of day');
-
-                const suggestionParts = [];
-                if (risk >= 75) suggestionParts.push('Consider extra reminders and review schedule');
-                else if (risk >= 50) suggestionParts.push('Snooze and repeat reminders; check routine');
-                else suggestionParts.push('Keep the good routine');
-
-                return {
-                    medicineId: med.id,
-                    name: med.name,
-                    risk,
-                    reasons: reasons.length ? reasons : ['no significant issues'],
-                    suggestion: suggestionParts.join('; ')
-                };
+                document.getElementById("streakCounter").textContent = `🔥 Current Streak: ${streak} days`;
             }
+
 
             function analyzeAdherencePatterns() {
                 const panel = document.getElementById('predictionPanel');
@@ -1872,16 +2257,6 @@
                 }
 
                 return streak;
-            }
-            function updateStreakDisplay() {
-                const streakDays = calculateStreak();
-                const streakElement = document.getElementById('streakCounter');
-
-                if (streakDays === 0) {
-                    streakElement.textContent = "🔥 Current Streak: 0 days 😔 (start taking doses consistently!)";
-                } else {
-                    streakElement.textContent = `🔥 Current Streak: ${streakDays} day${streakDays > 1 ? 's' : ''} 🏆`;
-                }
             }
 
             setInterval(generateRandomCrierAnnouncement, 300000);
@@ -1992,11 +2367,19 @@
                 spotlight.style.width = (rect.width + 20) + 'px';
                 spotlight.style.height = (rect.height + 20) + 'px';
 
+                // ✨ Reposition witch to the right side of the explained element
+                const witch = document.getElementById('witchContainer');
+                if (witch) {
+                    witch.style.position = 'absolute';
+                    witch.style.top = (window.scrollY + rect.top) + 'px';
+                    witch.style.left = (window.scrollX + rect.right + 20) + 'px'; // 20px to the right of target
+                }
+
                 // Scroll element into view
                 element.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
             function nextStep() {
-                if (currentStepIndex < tutorialSteps.length - 1) {
+                if (currentStepIndex < tutorialSteps.length + 8) {
                     showStep(currentStepIndex + 1);
                 } else {
                     completeTutorial();
@@ -2035,41 +2418,7 @@
                 }
             });
 
-
             (function () {
-                // UTIL: speak text and also update dialogue bubble
-                function speakAndShow(title, text) {
-                    if ('speechSynthesis' in window) {
-                        window.speechSynthesis.cancel();
-
-                        const utterance = new SpeechSynthesisUtterance(text || title || '');
-
-                        // ✅ Load saved voice selection
-                        const savedVoiceIndex = localStorage.getItem('grimoire_voice_index');
-                        const voices = window.speechSynthesis.getVoices();
-                        if (savedVoiceIndex && voices[savedVoiceIndex]) {
-                            utterance.voice = voices[savedVoiceIndex];
-                        }
-
-                        // ✅ Load saved rate & pitch
-                        const savedRate = localStorage.getItem('grimoire_voice_rate');
-                        const savedPitch = localStorage.getItem('grimoire_voice_pitch');
-                        utterance.rate = savedRate ? parseFloat(savedRate) : 0.95;
-                        utterance.pitch = savedPitch ? parseFloat(savedPitch) : 1.0;
-
-                        // ✅ Optional: adjust volume
-                        utterance.volume = 1;
-
-                        // Speak!
-                        window.speechSynthesis.speak(utterance);
-                    }
-
-                    // Also update the dialogue bubble text
-                    const titleNode = document.querySelector('.dialogue-title');
-                    const textNode = document.querySelector('.dialogue-text');
-                    if (titleNode) titleNode.textContent = title || '';
-                    if (textNode) textNode.textContent = text || '';
-                }
 
                 // spotlight helpers (uses existing .wizard-spotlight element)
                 const overlay = document.getElementById('wizardOverlay'); // .wizard-overlay parent
@@ -2121,62 +2470,46 @@
                     if (spotlight) spotlight.style.display = 'none';
                 }
                 const steps = [
-                    // 1. Focus Schedule section (already visible in your layout)
-                    { id: 'schedule_intro', openTab: 'schedule', selector: '.header', type: 'none', title: 'Schedule Potions', text: 'Welcome — we will start in the Schedule Potions section. I will walk you through the form fields one by one.' },
+                    { id: 'schedule_intro', openTab: 'schedule', selector: '.header', type: 'none', title: 'Schedule Potions', text: 'Welcome! We will begin in the Schedule Potions section. I will guide you through each form field step by step.' },
+                    { id: 'field_name', openTab: 'schedule', selector: '#medicineName', type: 'focus', title: 'Potion Name', text: 'Enter the name of your medicine — for example, "Flying Potion".' },
+                    { id: 'field_email', openTab: 'schedule', selector: '#email', type: 'focus', title: 'Email', text: 'Provide your email ID to receive reminder notifications for scheduled doses.' },
+                    { id: 'field_dosage', openTab: 'schedule', selector: '#dosage', type: 'focus', title: 'Dosage', text: 'Enter the dosage, for example 500 mg.' },
+                    { id: 'field_time', openTab: 'schedule', selector: '#time', type: 'focus', title: 'First Dose Time', text: 'Set the time for the first dose. This will act as the base schedule for all reminders.' },
+                    { id: 'field_frequency', openTab: 'schedule', selector: '#frequency', type: 'focus', title: 'Frequency', text: 'Choose how often the medicine should repeat — once daily, twice daily, or every 8 hours.' },
+                    { id: 'field_duration', openTab: 'schedule', selector: '#duration', type: 'focus', title: 'Duration', text: 'Set how many days the schedule should continue.' },
+                    { id: 'form_submit', openTab: 'schedule', selector: '#medicineForm button[type="submit"], #medicineForm .btn-primary, #medicineForm input[type="submit"]', type: 'submit', title: 'Add Medication', text: 'Click "Add Medication" to save your schedule.' },
+                    { id: 'current_schedules', openTab: 'schedule', selector: '#medicineList', type: 'click', title: 'Current Elixir Schedules', text: 'Here you can view, edit, or remove your active schedules.' },
 
-                    // Form fields: users must click / focus each field
-                    { id: 'field_name', openTab: 'schedule', selector: '#medicineName', type: 'focus', title: 'Potion Name', text: 'Click the Potion Name field and type a name for your medicine, for example flying potion.' },
+                    { id: 'user_dashboard_intro', openTab: 'userDashboard', selector: '#upcomingRemindersList', type: 'none', title: 'User Dashboard', text: 'Next, let’s explore the User Dashboard, where you can manage reminders and logs.' },
+                    { id: 'upcoming_reminders', openTab: 'userDashboard', selector: '#upcomingRemindersList', type: 'click', title: 'Upcoming Reminders', text: 'These are your upcoming doses. Click to mark them as taken or missed.' },
+                    { id: 'past_reminders', openTab: 'userDashboard', selector: '#pastRemindersList', type: 'click', title: 'Past Reminders', text: 'This section lists your past doses and how they were logged.' },
+                    { id: 'missed_dose_history', openTab: 'userDashboard', selector: '#missedDoseHistoryTable', type: 'click', title: 'Missed Dose History', text: 'A new feature: this table shows all your missed doses with timestamps, helping you track adherence issues over time.' },
 
-                    { id: 'field_name', openTab: 'schedule', selector: '#email', type: 'focus', title: 'Email', text: 'Click the Email field and type a email id to receive ur reminder notifications at scheduled time' },
+                    { id: 'wellness_intro', openTab: 'dashboard', selector: '.dashboard-grid', type: 'none', title: 'Wellness Dashboard', text: 'Here’s where we visualize your adherence data with analytics and predictions.' },
+                    { id: 'adherence_prediction', openTab: 'dashboard', selector: '#predictionCard', type: 'click', title: 'Adherence Predictions & Risk', text: '📊 New Feature: This section predicts your future adherence based on your dose history and highlights your current risk level.' },
+                    { id: 'risk_level', openTab: 'dashboard', selector: '#predictionPanel', type: 'click', title: 'Risk Level & Recommendations', text: 'This panel breaks down your adherence risk, missed doses, and provides personalized tips to improve consistency.' },
+                    { id: 'adherence_chart', openTab: 'dashboard', selector: '#adherenceChart', type: 'click', title: 'Daily Adherence Trends', text: 'See your adherence percentage day by day. Hover for detailed stats.' },
+                    { id: 'missed_chart', openTab: 'dashboard', selector: '#missedVsTakenChart', type: 'click', title: 'Missed vs Taken', text: 'This donut chart compares how many doses you’ve taken versus missed.' },
+                    { id: 'trend_chart', openTab: 'dashboard', selector: '#trendLineChart', type: 'click', title: '30-day Progress', text: 'This line graph shows how your adherence has evolved over the past month.' },
+                    { id: 'streak', openTab: 'dashboard', selector: '#streakCounter', type: 'click', title: 'Streak Counter', text: 'Track how many consecutive days you’ve followed your schedule. Keep the streak alive!' },
+                    { id: 'sound_settings', openTab: 'dashboard', selector: '#soundControls', type: 'click', title: 'Sound & Voice Settings', text: '🎧 New Feature: Control the witch voice narration, tutorial sounds, and notification tones here.' },
+                    { id: 'clock_notify', openTab: 'dashboard', selector: '#clock', type: 'click', title: 'Clock & Notifications', text: 'This clock shows your current time. Notifications for doses will appear in the top-right corner.' },
 
-                    { id: 'field_dosage', openTab: 'schedule', selector: '#dosage', type: 'focus', title: 'Dosage', text: 'Now click the Dosage field and enter how much to take, for example 500 mg.' },
-
-                    { id: 'field_time', openTab: 'schedule', selector: '#time', type: 'focus', title: 'First Dose Time', text: 'Select the time for the first dose. This sets the base time for scheduled reminders.' },
-
-                    { id: 'field_frequency', openTab: 'schedule', selector: '#frequency', type: 'focus', title: 'Frequency', text: 'Choose how often the medicine should repeat, for example once daily or every 8 hours.' },
-
-                    { id: 'field_duration', openTab: 'schedule', selector: '#duration', type: 'focus', title: 'Duration', text: 'Enter how many days the schedule should continue.' },
-
-                    { id: 'form_submit', openTab: 'schedule', selector: '#medicineForm button[type="submit"], #medicineForm .btn-primary, #medicineForm input[type="submit"]', type: 'submit', title: 'Add Medication', text: 'Great — click Add Medication to save the schedule. I will wait here until you submit the form.' },
-
-                    // 2. Current Elixir Schedule explanation - auto open and wait for user to click a schedule item or its actions
-                    { id: 'current_schedules', openTab: 'schedule', selector: '#medicineList', type: 'click', title: 'Current Elixir Schedules', text: 'This is the Current Elixir Schedules list. Click any item or its Edit / Remove buttons to inspect actions.' },
-
-                    // 3. User Dashboard - open and step through upcoming/past
-                    { id: 'user_dashboard_intro', openTab: 'userDashboard', selector: '#upcomingRemindersList', type: 'none', title: 'User Dashboard', text: 'Now I will open the User Dashboard to show upcoming and past reminders.' },
-                    { id: 'upcoming_reminders', openTab: 'userDashboard', selector: '#upcomingRemindersList', type: 'click', title: 'Upcoming Reminders', text: 'These are upcoming reminders. Click any reminder to view details or mark as taken.' },
-                    { id: 'past_reminders', openTab: 'userDashboard', selector: '#pastRemindersList', type: 'click', title: 'Past Reminders', text: 'This list shows past reminders and logs. Click an entry to inspect how it was recorded.' },
-
-                    // 4. Wellness Dashboard - open and step through charts
-                    { id: 'wellness_intro', openTab: 'dashboard', selector: '.dashboard-grid', type: 'none', title: 'Wellness Dashboard', text: 'Now I shall open the Wellness Dashboard to explain the charts and analytics.' },
-                    { id: 'adherence_trend', openTab: 'dashboard', selector: '#predictionCard', type: 'click', title: 'Adherence Prediction and Risk', text: 'This section uses your past medication history to forecast how likely you are to follow your schedule. It helps identify potential drop-offs and suggests actions to improve adherence.' },
-                    { id: 'adherence_chart', openTab: 'dashboard', selector: '#adherenceChart', type: 'click', title: 'Adherence Trends', text: 'This chart shows daily adherence percentages. Hover or click a bar to see the exact value.' },
-                    { id: 'missed_chart', openTab: 'dashboard', selector: '#missedVsTakenChart', type: 'click', title: 'Missed vs Taken', text: 'This donut chart compares taken versus missed doses for the day. Click the segments to inspect proportions.' },
-                    { id: 'trend_chart', openTab: 'dashboard', selector: '#trendLineChart', type: 'click', title: '30-day Progress', text: 'This line chart shows adherence progress over 30 days. Use it to spot long-term trends.' },
-
-                    // 5. Remaining: Streak and Clock/Notifications
-                    { id: 'streak', openTab: 'dashboard', selector: '#streakCounter', type: 'click', title: 'Streak Counter', text: 'This counter tracks consecutive days of adherence. Click it to learn tips for maintaining your streak.' },
-                    { id: 'clock_notify', openTab: 'dashboard', selector: '#clock', type: 'click', title: 'Clock & Notifications', text: 'The clock shows your local time. Notifications appear at the top-right — click to view recent notifications or snooze reminders.' },
-
-                    // final summary
-                    { id: 'complete', selector: '.header', type: 'none', title: 'Tutorial Complete', text: 'That concludes the guided tour. You can re-open this guide any time by clicking Start Guide Tour.' }
+                    { id: 'complete', selector: '.header', type: 'none', title: 'Tutorial Complete', text: 'You’re now ready to master potion adherence! You can restart this tour anytime from the menu.' }
                 ];
 
-                // index & control refs
+
                 let idx = 0;
                 let waiting = false;
                 let currentListener = null;
 
-                // Hook page-level Next Prev Skip buttons (your next/prev/skip in wizard controls)
-                const nextBtn = document.querySelector('.wizard-btn-next') || document.querySelector('.wizard-btn-next, .wizard-btn-next');
+                const nextBtn = document.querySelector('.wizard-btn-next');
                 const prevBtn = document.querySelector('.wizard-btn-prev');
                 const skipBtn = document.querySelector('.wizard-btn-skip');
 
-                // Next button manual override
                 if (nextBtn) nextBtn.addEventListener('click', () => {
                     if (!waiting) goToStep(idx + 1);
                     else {
-                        // if waiting, treat Next as forcing advance (useful fallback)
                         removeWaitListeners();
                         goToStep(idx + 1);
                     }
@@ -2186,7 +2519,6 @@
                     goToStep(Math.max(0, idx - 1));
                 });
                 if (skipBtn) skipBtn.addEventListener('click', () => {
-                    // end tutorial
                     removeWaitListeners();
                     finishTutorial();
                 });
@@ -2197,12 +2529,10 @@
                     currentListener = null;
                 }
 
-                // wait helpers
                 function waitForClick(target, callback) {
                     if (!target) return callback();
                     waiting = true;
                     const handler = function (e) {
-                        // if click inside target
                         if (target.contains(e.target) || e.target === target) {
                             removeWaitListeners();
                             callback();
@@ -2211,6 +2541,64 @@
                     document.addEventListener('click', handler, { capture: true });
                     currentListener = { remove: () => document.removeEventListener('click', handler, { capture: true }) };
                 }
+                function updateStreakDisplay() {
+                    const today = new Date().toDateString();
+                    let totalDosesToday = 0;
+
+                    medicines.forEach(med => {
+                        switch (med.frequency) {
+                            case "onceDaily": totalDosesToday += 1; break;
+                            case "twiceDaily": totalDosesToday += 2; break;
+                            case "every8h": totalDosesToday += 3; break;
+                            case "everyOtherDay":
+                                const start = new Date(med.startDate || Date.now());
+                                const diffDays = Math.floor((Date.now() - start.getTime()) / (1000 * 60 * 60 * 24));
+                                if (diffDays % 2 === 0) totalDosesToday += 1;
+                                break;
+                            case "weekly":
+                                const todayIdx = new Date().getDay();
+                                const scheduledDay = med.weekday !== undefined ? med.weekday : 1;
+                                if (todayIdx === scheduledDay) totalDosesToday += 1;
+                                break;
+                            default: totalDosesToday += 1;
+                        }
+                    });
+
+                    const takenToday = doseLogs.filter(
+                        l => new Date(l.takenAt).toDateString() === today && l.status === "taken"
+                    ).length;
+
+                    const allTaken = totalDosesToday > 0 && takenToday === totalDosesToday;
+
+                    let streak = parseInt(localStorage.getItem("currentStreak")) || 0;
+                    let longest = parseInt(localStorage.getItem("longestStreak")) || 0;
+                    const lastDate = localStorage.getItem("lastStreakDate");
+
+                    if (lastDate !== today) {
+                        if (allTaken) {
+                            streak++;
+                            if (streak > longest) longest = streak;
+                        } else {
+                            streak = 0;
+                        }
+                        localStorage.setItem("currentStreak", streak);
+                        localStorage.setItem("longestStreak", longest);
+                        localStorage.setItem("lastStreakDate", today);
+                    }
+
+                    document.getElementById("currentStreak").textContent = `${streak} days`;
+                    document.getElementById("longestStreak").textContent = `${longest} days`;
+                    document.getElementById("totalDaysTracked").textContent = doseLogs.length > 0 ?
+                        new Set(doseLogs.map(l => new Date(l.takenAt).toDateString())).size : 0;
+
+                    const perfectDays = [...new Set(doseLogs.map(l => new Date(l.takenAt).toDateString()))].filter(date => {
+                        const total = totalDosesToday;
+                        const taken = doseLogs.filter(l => new Date(l.takenAt).toDateString() === date && l.status === "taken").length;
+                        return total > 0 && total === taken;
+                    }).length;
+                    document.getElementById("perfectDays").textContent = perfectDays;
+                }
+
 
                 function waitForFocus(target, callback) {
                     if (!target) return callback();
@@ -2228,23 +2616,67 @@
                 function waitForSubmit(form, callback) {
                     if (!form) return callback();
                     waiting = true;
-                    const submitHandler = function (e) {
-                        // allow actual submit to proceed; we just detect it
+                    const submitHandler = function () {
                         removeWaitListeners();
-                        // small delay to let form handling run (persist, render)
                         setTimeout(() => callback(), 250);
                     };
                     form.addEventListener('submit', submitHandler, { once: true });
                     currentListener = { remove: () => form.removeEventListener('submit', submitHandler) };
                 }
 
-                // If element absent, show bubble centered and continue to next with Next fallback
                 function safeQuery(selector) {
                     if (!selector) return null;
                     return document.querySelector(selector) || null;
                 }
 
-                // Main step runner
+                function speakAndShow(title, text) {
+                    if ('speechSynthesis' in window) {
+                        window.speechSynthesis.cancel();
+
+                        const utterance = new SpeechSynthesisUtterance(text || title || '');
+
+                        // ✅ Load saved voice selection
+                        const savedVoiceIndex = localStorage.getItem('grimoire_voice_index');
+                        const voices = window.speechSynthesis.getVoices();
+                        if (savedVoiceIndex && voices[savedVoiceIndex]) {
+                            utterance.voice = voices[savedVoiceIndex];
+                        }
+
+                        // ✅ Load saved rate & pitch
+                        const savedRate = localStorage.getItem('grimoire_voice_rate');
+                        const savedPitch = localStorage.getItem('grimoire_voice_pitch');
+                        utterance.rate = savedRate ? parseFloat(savedRate) : 0.95;
+                        utterance.pitch = savedPitch ? parseFloat(savedPitch) : 1.0;
+
+                        // ✅ Optional: adjust volume
+                        utterance.volume = 1;
+
+                        // Speak!
+                        window.speechSynthesis.speak(utterance);
+                    }
+
+                    // Also update the dialogue bubble text
+                    const titleNode = document.querySelector('.dialogue-title');
+                    const textNode = document.querySelector('.dialogue-text');
+                    if (titleNode) titleNode.textContent = title || '';
+                    if (textNode) textNode.textContent = text || '';
+                }
+
+                // 🎧 Global audio player for tutorial steps
+                const tutorialAudio = new Audio();
+
+                function playStepAudio(stepIndex) {
+                    // pause broom SFX if playing
+                    const broom = document.getElementById('witchSound');
+                    if (broom && !broom.paused) { try { broom.pause(); broom.currentTime = 0; } catch (e) { } }
+
+                    tutorialAudio.pause();
+                    tutorialAudio.currentTime = 0;
+                    tutorialAudio.src = `assets/audio/tutorial/step${stepIndex + 1}.mp3`;
+                    tutorialAudio.play().catch(err => console.warn("Audio missing for step", stepIndex + 1));
+                }
+
+
                 function goToStep(i) {
                     removeWaitListeners();
                     idx = i;
@@ -2253,18 +2685,13 @@
 
                     const step = steps[idx];
 
-                    // optionally open a tab
                     if (step.openTab && typeof switchTab === 'function') {
                         try { switchTab(step.openTab); } catch (e) { }
                     }
 
-                    // show wizard UI
                     showWizardUI();
 
-                    // find target
                     const el = safeQuery(step.selector);
-
-                    // update progress UI if present
                     const total = steps.length;
                     const curStepNode = document.getElementById('currentStep');
                     const totalNode = document.getElementById('totalSteps');
@@ -2273,112 +2700,94 @@
                     if (totalNode) totalNode.textContent = total;
                     if (progressFill) progressFill.style.width = ((idx + 1) / total * 100) + '%';
 
-                    // set spotlight & highlight on target, or center bubble if no target
                     if (el) {
                         setSpotlightOnElement(el);
                     } else {
-                        // center wizard bubble near header
                         removeHighlight();
                         const header = document.querySelector('.header') || document.body;
                         setSpotlightOnElement(header);
                     }
 
-                    // show title & text and speak
-                    speakAndShow(step.title || '', step.text || '');
+                    const titleNode = document.querySelector('.dialogue-title');
+                    const textNode = document.querySelector('.dialogue-text');
+                    if (titleNode) titleNode.textContent = step.title || '';
+                    if (textNode) textNode.textContent = step.text || '';
+                    playStepAudio(idx);
 
-                    // decide how to wait
+
                     if (step.type === 'click') {
-                        // wait for user to click on target or any child
                         if (el) {
                             waitForClick(el, () => goToStep(idx + 1));
                         } else {
-                            // if missing, fallback to manual Next
                             waiting = true;
                         }
                     } else if (step.type === 'focus') {
                         if (el) {
-                            // focus instruction: also programmatically focus to guide them
                             try { el.focus(); } catch (e) { }
                             waitForFocus(el, () => goToStep(idx + 1));
                         } else {
                             waiting = true;
                         }
                     } else if (step.type === 'submit') {
-                        // selector should be the form
                         const form = el || document.querySelector('#medicineForm');
                         if (form) waitForSubmit(form, () => {
-                            // After submission, re-rendering likely changed list — small delay then continue
                             setTimeout(() => goToStep(idx + 1), 400);
                         });
                         else waiting = true;
                     } else if (step.type === 'any') {
                         if (el) waitForClick(el, () => goToStep(idx + 1));
                         else waiting = true;
-                    } else { // 'none' or unknown: no required interaction -> just show until user clicks Next
+                    } else {
                         waiting = true;
                     }
 
-                    // ensure Next button label
                     const nextBtnLocal = document.querySelector('.wizard-btn-next');
                     if (nextBtnLocal) nextBtnLocal.textContent = (idx === steps.length - 1) ? 'Finish' : 'Next';
-                    // Prev button enable/disable
                     const prevBtnLocal = document.querySelector('.wizard-btn-prev');
                     if (prevBtnLocal) prevBtnLocal.disabled = idx === 0;
                 }
+
                 function finishTutorial() {
-                    // Final spotlight on header for cinematic finish
+                    // Final spotlight
                     const header = document.querySelector('.header') || document.body;
                     setSpotlightOnElement(header);
 
-                    // Final message and TTS
-                    speakAndShow(
-                        '🎓 Master of the Grimoire!',
-                        'Congratulations, adventurer! You have now mastered every single section — from potion scheduling and reminders to adherence prediction and risk. May your adherence journey be legendary!'
-                    );
+                    // Play final mp3 (optional)
+                    const finalAudio = new Audio('assets/audio/tutorial/final.mp3');
+                    finalAudio.play().catch(() => console.warn("Final audio missing"));
 
-                    // Delay closing to let message display
+
+                    // close UI after the audio starts (no alert())
                     setTimeout(() => {
                         hideWizardUI();
                         removeHighlight();
                         const restart = document.getElementById('restartWizard');
                         if (restart) restart.style.display = 'inline-block';
-
-                        // Final popup confirmation
-                        alert("🎉 Tutorial Complete! You are now the Master of the Grimoire!");
+                        // non-blocking notice instead of alert()
+                        showNotification && showNotification('🎉 Tutorial Complete! You are now the Master of the Grimoire!');
                     }, 4000);
                 }
 
 
-
-
-                // start function exposed
                 window.startInteractiveTutorial = function () {
-                    // safety: cancel any ongoing speech
-                    if ('speechSynthesis' in window) try { window.speechSynthesis.cancel(); } catch (e) { }
-
                     idx = 0;
                     goToStep(0);
                 };
 
-                // auto-run once (if desired) - we will not auto-run by default; attach to existing Start button
-                // Hook your restart/start button if present
                 const startBtn = document.getElementById('restartWizard');
                 if (startBtn) startBtn.addEventListener('click', () => {
                     startBtn.style.display = 'none';
                     startInteractiveTutorial();
                 });
 
-                // Optionally show Sommon Wizard button if you have one (e.g., mentorSummonBtn)
                 const summonEl = document.getElementById('mentorSummonBtn') || document.getElementById('wizardSummonBtn');
                 if (summonEl) {
                     summonEl.addEventListener('click', () => {
                         startInteractiveTutorial();
                     });
-                    // show it
                     summonEl.style.display = 'inline-block';
                 }
 
-                // If wizard container Next/Prev are clicked, they are wired above to advance; but ensure keyboard accessibility:
                 document.addEventListener('keydown', (e) => {
                     if (!overlay.classList.contains('active')) return;
                     if (e.key === 'ArrowRight') {
@@ -2393,135 +2802,456 @@
                     }
                 });
 
-                // make overlay not block clicks on highlighted element(s)
                 if (overlay) overlay.style.pointerEvents = 'none';
                 if (spotlight) spotlight.style.pointerEvents = 'none';
 
-                // final: expose small API
                 window.__InteractiveTutorial = {
                     start: startInteractiveTutorial,
                     stop: finishTutorial
                 };
 
             })();
+            async function loadAdherenceDashboard(email) {
+                const res = await fetch(`http://localhost:3000/adherenceSummary?email=${encodeURIComponent(email)}&days=7`);
+                const data = await res.json();
+
+                const labels = data.summary.map(d => d.date);
+                const taken = data.summary.map(d => d.taken);
+                const missed = data.summary.map(d => d.missed);
+
+                // Update stats
+                document.getElementById("adherenceStats").innerHTML = `
+    <p><strong>Total Taken:</strong> ${data.totalTaken}</p>
+    <p><strong>Total Missed:</strong> ${data.totalMissed}</p>
+    <p><strong>Adherence Rate:</strong> ${data.adherence}%</p>
+  `;
+
+                // Draw chart
+                const ctx = document.getElementById("adherenceChartUser").getContext("2d");
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [
+                            {
+                                label: 'Taken',
+                                data: taken,
+                                backgroundColor: '#4CAF50'
+                            },
+                            {
+                                label: 'Missed',
+                                data: missed,
+                                backgroundColor: '#F44336'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            }
+            // ===== Enhanced Dashboard client functions =====
+            let edTrendChart = null;
+            let edPerMedicineChart = null;
+
+            function isoDateFromInput(val) {
+                if (!val) return null;
+                return DateTime.fromISO(val).toISODate(); // yyyy-MM-dd
+            }
+
+            async function loadEnhancedDashboardControls() {
+                // populate medicines filter from schedules (frontend uses 'medicines' localStorage)
+                const select = document.getElementById('edMedicineFilter');
+                select.innerHTML = '<option value="">All</option>';
+                medicines.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.id;
+                    opt.textContent = m.name;
+                    select.appendChild(opt);
+                });
+            }
+
+            function setupEnhancedControls() {
+                const rangeSelect = document.getElementById('edRangeSelect');
+                const customInputs = document.getElementById('customRangeInputs');
+                rangeSelect.addEventListener('change', () => {
+                    customInputs.style.display = (rangeSelect.value === 'custom') ? 'inline-block' : 'none';
+                });
+
+                // ✅ Apply Button
+                document.getElementById('edApplyBtn').addEventListener('click', () => {
+                    const email = document.getElementById('email').value || DEFAULT_EMAIL;
+                    if (!email) {
+                        showNotification("⚠️ Please set DEFAULT_EMAIL in script before applying filters.");
+                        return;
+                    }
+                    loadEnhancedDashboard();
+                });
+
+                // ✅ Refresh Button
+                document.getElementById('edRefreshBtn').addEventListener('click', () => {
+                    const email = document.getElementById('email').value || DEFAULT_EMAIL;
+                    if (!email) {
+                        showNotification("⚠️ Please set DEFAULT_EMAIL in script before refreshing dashboard.");
+                        return;
+                    }
+                    loadEnhancedDashboard();
+                });
+
+                document.getElementById('edExportBtn').addEventListener('click', () => exportEnhancedCSV());
+            }
+
+            // Get range params
+            function getEnhancedRangeParams() {
+                const rangeOption = document.getElementById('edRangeSelect').value;
+                if (rangeOption === 'custom') {
+                    const from = document.getElementById('edFrom').value;
+                    const to = document.getElementById('edTo').value;
+                    return { from, to };
+                } else {
+                    const days = parseInt(rangeOption, 10);
+                    return { days };
+                }
+            }
+
+            // Main loader
+            async function loadEnhancedDashboard() {
+                const email = document.getElementById("email").value || DEFAULT_EMAIL;
+                if (!email) {
+                    showNotification("⚠️ Please set DEFAULT_EMAIL in script before loading dashboard");
+                    return;
+                }
+
+                const medFilter = document.getElementById('edMedicineFilter').value;
+                const range = getEnhancedRangeParams();
+
+                // Build query strings
+                let q = `?email=${encodeURIComponent(email)}`;
+                if (range.days) q += `&days=${range.days}`;
+                else {
+                    if (range.from) q += `&from=${encodeURIComponent(range.from)}`;
+                    if (range.to) q += `&to=${encodeURIComponent(range.to)}`;
+                }
+                if (medFilter) q += `&medicineId=${encodeURIComponent(medFilter)}`;
+
+                // 1) fetch trend
+                try {
+                    const trendRes = await fetch(`http://localhost:3000/adherenceTrend${q}`);
+                    const trendJson = await trendRes.json();
+                    if (trendJson.success) {
+                        renderEDTrendChart(trendJson.trend);
+                    }
+                } catch (err) {
+                    console.error('Failed to fetch trend', err);
+                }
+
+                // 2) fetch per-medicine summary
+                try {
+                    const perRes = await fetch(`http://localhost:3000/perMedicineSummary?email=${encodeURIComponent(email)}${range.days ? `&days=${range.days}` : (range.from ? `&from=${range.from}&to=${range.to}` : '')}`);
+                    const perJson = await perRes.json();
+                    if (perJson.success) {
+                        renderEDPerMedicine(perJson.summary);
+                    }
+                } catch (err) {
+                    console.error('Failed to fetch per medicine', err);
+                }
+
+                // 3) fetch history (limit 200)
+                try {
+                    const histRes = await fetch(`http://localhost:3000/adherenceHistory${q}&limit=200`);
+                    const histJson = await histRes.json();
+                    if (histJson.success) {
+                        renderEDHistoryTable(histJson.logs);
+                    }
+                } catch (err) {
+                    console.error('Failed to fetch history', err);
+                }
+            }
+
+            // Renderers
+            function renderEDTrendChart(trend) {
+                const labels = trend.map(d => DateTime.fromISO(d.date).toLocaleString(DateTime.DATE_MED));
+                const data = trend.map(d => d.adherence);
+
+                const ctx = document.getElementById('trendLineChart').getContext('2d');
+                if (edTrendChart) edTrendChart.destroy();
+                edTrendChart = new Chart(ctx, {
+                    type: 'line',
+                    data: { labels, datasets: [{ label: 'Adherence %', data, borderColor: '#ffb347', backgroundColor: 'rgba(255,179,71,0.15)', fill: true, tension: 0.25 }] },
+                    options: { scales: { y: { beginAtZero: true, max: 100 } } }
+                });
+            }
+
+            function renderEDPerMedicine(summary) {
+                const labels = summary.map(s => s.medicineName);
+                const taken = summary.map(s => s.taken);
+                const missed = summary.map(s => s.missed);
+
+                const ctx = document.getElementById('missedVsTakenChart').getContext('2d');
+                if (edPerMedicineChart) edPerMedicineChart.destroy();
+                edPerMedicineChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels, datasets: [{ label: 'Taken', data: taken, backgroundColor: '#4ecdc4' }, { label: 'Missed', data: missed, backgroundColor: '#eb4d4b' }] },
+                    options: { responsive: true, scales: { y: { beginAtZero: true } }, plugins: { legend: { position: 'bottom' } } }
+                });
+            }
+
+            function renderEDHistoryTable(logs) {
+                const tbody = document.querySelector('#edHistoryTable tbody');
+                tbody.innerHTML = '';
+                logs.forEach(l => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+      <td style="padding:8px;">${DateTime.fromISO(l.takenAt).toLocaleString(DateTime.DATETIME_MED)}</td>
+      <td style="padding:8px;">${l.medicineName || ''}</td>
+      <td style="padding:8px; color:${l.status === 'taken' ? '#4ecdc4' : '#eb4d4b'}; font-weight:bold;">${l.status.toUpperCase()}</td>
+      <td style="padding:8px;">${l.timezone || ''}</td>
+    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // Initialize controls on page load
+            document.addEventListener('DOMContentLoaded', () => {
+                loadEnhancedDashboardControls();
+                setupEnhancedControls();
+            });
+
+            // Also reload enhanced dashboard when switching to 'dashboard' tab
+            const originalSwitchTab = window.switchTab;
+            window.switchTab = function (tabName) {
+                originalSwitchTab(tabName);
+                if (tabName === 'dashboard') {
+                    loadEnhancedDashboard();
+                }
+            };
+
+            function autoMarkMissed() {
+                const now = new Date();
+
+                medicines.forEach(med => {
+                    const [h, m] = med.time.split(":");
+                    const scheduled = new Date();
+                    scheduled.setHours(parseInt(h), parseInt(m), 0, 0);
+
+                    // ✅ If more than 2 hours past scheduled and not taken/missed, mark missed
+                    if (now - scheduled > 2 * 60 * 60 * 1000) {
+                        const alreadyLogged = doseLogs.some(
+                            l => l.medicineId === med.id && new Date(l.takenAt).toDateString() === now.toDateString()
+                        );
+                        if (!alreadyLogged) {
+                            doseLogs.push({
+                                medicineId: med.id,
+                                medicineName: med.name,
+                                email: med.email || getUserEmail(),
+                                status: "missed",
+                                takenAt: now.toISOString(),
+                                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                            });
+                            localStorage.setItem("doseLogs", JSON.stringify(doseLogs));
+                        }
+                    }
+                });
+            }
+            setInterval(autoMarkMissed, 5 * 60 * 1000); // check every 5 min
 
 
-            (function () {
-                const select = document.getElementById('voiceSelect');
-                const rateInput = document.getElementById('rate');
-                const pitchInput = document.getElementById('pitch');
-                const rateVal = document.getElementById('rateVal');
-                const pitchVal = document.getElementById('pitchVal');
-                const sampleText = document.getElementById('sampleText');
-                const previewBtn = document.getElementById('previewBtn');
-                const stopBtn = document.getElementById('stopBtn');
-                const resetBtn = document.getElementById('resetVoice');
-                const info = document.getElementById('voiceInfo');
+            // ✅ Final working export function
+            async function exportEnhancedCSV() {
+                const emailInput = document.getElementById("email").value || "";
+                const email = emailInput.trim() || DEFAULT_EMAIL;
 
-                let voices = [];
-                let lastUtter = null;
+                if (!email || !email.includes("@")) {
+                    showNotification("⚠️ Please enter a valid email or set DEFAULT_EMAIL before exporting.");
+                    return;
+                }
 
-                function populateVoices() {
-                    voices = window.speechSynthesis.getVoices() || [];
-                    select.innerHTML = '';
-                    if (!voices.length) {
-                        const opt = document.createElement('option');
-                        opt.textContent = 'No voices available';
-                        opt.value = '';
-                        select.appendChild(opt);
-                        info.textContent = 'No TTS voices found — your browser may not support speechSynthesis or voices are still loading.';
+                const medFilter = document.getElementById("edMedicineFilter").value;
+                const range = getEnhancedRangeParams();
+                let q = `?email=${encodeURIComponent(email)}`;
+
+                if (range.days) {
+                    q += `&days=${encodeURIComponent(range.days)}`;
+                } else {
+                    if (range.from) q += `&from=${encodeURIComponent(range.from)}`;
+                    if (range.to) q += `&to=${encodeURIComponent(range.to)}`;
+                }
+
+                if (medFilter) q += `&medicineId=${encodeURIComponent(medFilter)}`;
+
+                try {
+                    const res = await fetch(`http://localhost:3000/exportLogs${q}`);
+                    if (!res.ok) throw new Error(`Server returned ${res.status}`);
+
+                    const blob = await res.blob();
+                    if (blob.size === 0) {
+                        showNotification("⚠️ Export completed but file is empty (no data in range).");
                         return;
                     }
 
-                    // Fill the select
-                    voices.forEach((v, i) => {
-                        const opt = document.createElement('option');
-                        opt.value = i;
-                        opt.textContent = `${v.name} — ${v.lang}${v.default ? ' (default)' : ''}`;
-                        select.appendChild(opt);
-                    });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "adherence_logs.csv";
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
 
-                    // Restore saved choice
-                    const saved = localStorage.getItem('grimoire_voice_index');
-                    if (saved !== null && voices[saved]) {
-                        select.value = saved;
-                        info.textContent = `Loaded saved voice: ${voices[saved].name} (${voices[saved].lang})`;
-                    } else {
-                        // try to pick a human-like preference if available
-                        const pref = voices.findIndex(v => /natural|enhanced|google|samantha|alex|zira|female/i.test(v.name + ' ' + v.lang));
-                        if (pref >= 0) { select.value = pref; info.textContent = `Suggested voice: ${voices[pref].name} (${voices[pref].lang})`; }
-                        else { select.selectedIndex = 0; info.textContent = `Showing ${voices.length} available voices.`; }
+                    showNotification("✅ CSV exported successfully!");
+                } catch (err) {
+                    console.error("Export failed:", err);
+                    showNotification("⚠️ Failed to export adherence logs.");
+                }
+            }
+            async function renderMissedDoseHistory(email) {
+                const res = await fetch(`/adherenceHistory?email=${encodeURIComponent(email)}&limit=100`);
+                const json = await res.json();
+                if (!json.success) return;
+
+                const container = document.getElementById('missedHistoryList');
+                if (!container) return;
+
+                container.innerHTML = ''; // Clear old content
+
+                const missed = json.logs.filter(l => l.status === 'missed');
+                if (missed.length === 0) {
+                    container.innerHTML = `<p class="text-gray-500">✅ No missed doses recorded!</p>`;
+                    return;
+                }
+
+                missed.forEach(log => {
+                    const logTime = new Date(log.takenAt).toLocaleString();
+                    const item = document.createElement('div');
+                    item.className = 'missed-entry';
+                    item.innerHTML = `
+            <div><strong>${log.medicineName}</strong> (${log.medicineId || 'N/A'})</div>
+            <div>Status: ❌ Missed</div>
+            <div>Date: ${logTime}</div>
+        `;
+                    container.appendChild(item);
+                });
+            }
+
+            function renderMissedDoseHistoryTable() {
+                const tbody = document.querySelector('#edHistoryTable tbody');
+                if (!tbody) return;
+
+                const missedLogs = doseLogs
+                    .filter(log => log.status === 'missed')
+                    .sort((a, b) => new Date(b.takenAt) - new Date(a.takenAt));
+
+                tbody.innerHTML = '';
+
+                if (missedLogs.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" style="padding:8px; color:#aaa;">✅ No missed doses logged yet.</td></tr>`;
+                    return;
+                }
+
+                missedLogs.forEach(log => {
+                    const date = new Date(log.takenAt);
+                    tbody.innerHTML += `
+            <tr style="border-bottom:1px solid rgba(255,179,71,0.1);">
+                <td style="padding:8px;">${date.toLocaleDateString()}</td>
+                <td style="padding:8px;">${log.medicineName}</td>
+                <td style="padding:8px; color:#eb4d4b;">❌ Missed</td>
+                <td style="padding:8px;">${date.toLocaleString()}</td>
+            </tr>
+        `;
+                });
+            }
+            function createStars(count = 100) {
+                const overlay = document.getElementById("starOverlay");
+                overlay.innerHTML = ""; // clear previous stars
+                for (let i = 0; i < count; i++) {
+                    const star = document.createElement("div");
+                    star.classList.add("star");
+                    star.style.top = `${Math.random() * 100}%`;
+                    star.style.left = `${Math.random() * 100}%`;
+                    star.style.setProperty("--s", `${Math.random() * 3 + 1}px`);
+                    star.style.setProperty("--d", `${2 + Math.random() * 2}s`);
+                    overlay.appendChild(star);
+                }
+            }
+
+            function startWitchFlight() {
+                const witch = document.getElementById("flyingWitch");
+                const stars = document.getElementById("starOverlay");
+
+                // ✨ Create and show stars
+                createStars(120);
+                stars.style.display = "block";
+                requestAnimationFrame(() => stars.style.opacity = "1");
+
+                // 🧙‍♀️ Trigger witch flight animation
+                witch.classList.add("fly");
+
+                // 🌟 Hide stars and reset witch after flight
+                setTimeout(() => {
+                    witch.classList.remove("fly");
+                    stars.style.opacity = "0";
+                    setTimeout(() => stars.style.display = "none", 600);
+                }, 4000); // match animation duration
+            }
+
+            document.getElementById("startFlight").addEventListener("click", startWitchFlight);
+
+
+            // ✨ Flying witch animation remains unchanged
+            (function () {
+                // REPLACE lines 2490-2519 with this consolidated safe handler
+                document.getElementById("startFlight").addEventListener("click", function () {
+                    document.getElementById("witchSound").currentTime = 0;
+                    document.getElementById("witchSound").play().catch(err => console.log("Audio play blocked:", err));
+
+                    const witch = document.getElementById("flyingWitch");
+                    const stars = document.getElementById("starOverlay");
+                    const broom = document.getElementById("witchSound");
+
+                    // guard: don't re-trigger while already flying
+                    if (witch.classList.contains("fly")) return;
+
+                    // pause tutorial audio if playing (avoid overlap)
+                    if (window.tutorialAudio && !window.tutorialAudio.paused) {
+                        try { window.tutorialAudio.pause(); window.tutorialAudio.currentTime = 0; } catch (e) { }
                     }
-                }
 
-                // browsers load voices asynchronously — listen for event and call populate
-                window.speechSynthesis.onvoiceschanged = () => {
-                    populateVoices();
-                };
+                    // Reset / show stars
+                    witch.style.display = "none";
+                    witch.classList.remove("fly");
+                    stars.style.display = "none";
+                    stars.style.opacity = "0";
+                    stars.style.display = "block";
+                    requestAnimationFrame(() => (stars.style.opacity = "1"));
 
-                // fallback: try populate after short delay (some browsers don't fire voiceschanged)
-                setTimeout(() => { if (!window.speechSynthesis.getVoices().length) populateVoices(); }, 600);
+                    // Start flight after a short delay
+                    setTimeout(() => {
+                        witch.style.display = "block";
 
-                function speakPreview() {
-                    stopSpeaking();
-                    if (!('speechSynthesis' in window)) { alert('SpeechSynthesis not supported by this browser.'); return; }
-                    const txt = sampleText.value || sampleText.placeholder || 'Hello';
-                    const u = new SpeechSynthesisUtterance(txt);
-                    const idx = parseInt(select.value, 10);
-                    if (!isNaN(idx) && voices[idx]) u.voice = voices[idx];
-                    u.rate = parseFloat(rateInput.value || 1);
-                    u.pitch = parseFloat(pitchInput.value || 1);
-                    lastUtter = u;
-                    u.onend = () => { lastUtter = null; };
-                    u.onerror = () => { lastUtter = null; };
-                    window.speechSynthesis.cancel(); // stop any existing
-                    window.speechSynthesis.speak(u);
-                }
+                        // play broom SFX (safe)
+                        if (broom) {
+                            try { broom.currentTime = 0; broom.play().catch(() => { }); } catch (e) { }
+                        }
 
-                function stopSpeaking() {
-                    try { window.speechSynthesis.cancel(); } catch (e) { }
-                    lastUtter = null;
-                }
+                        // start flying animation
+                        witch.classList.add("fly");
 
-                // save selection
-                select.addEventListener('change', () => {
-                    localStorage.setItem('grimoire_voice_index', select.value);
-                    const idx = parseInt(select.value, 10);
-                    if (voices[idx]) info.textContent = `Selected: ${voices[idx].name} (${voices[idx].lang})`;
+                        // cleanup after animation ends
+                        witch.addEventListener("animationend", () => {
+                            witch.classList.remove("fly");
+                            stars.style.opacity = "0";
+                            setTimeout(() => (stars.style.display = "none"), 800);
+                        }, { once: true });
+
+                    }, 200);
                 });
 
-                rateInput.addEventListener('input', () => { rateVal.textContent = rateInput.value; localStorage.setItem('grimoire_voice_rate', rateInput.value); });
-                pitchInput.addEventListener('input', () => { pitchVal.textContent = pitchInput.value; localStorage.setItem('grimoire_voice_pitch', pitchInput.value); });
-
-                previewBtn.addEventListener('click', speakPreview);
-                stopBtn.addEventListener('click', stopSpeaking);
-
-                resetBtn.addEventListener('click', () => {
-                    localStorage.removeItem('grimoire_voice_index');
-                    localStorage.removeItem('grimoire_voice_rate');
-                    localStorage.removeItem('grimoire_voice_pitch');
-                    select.selectedIndex = 0;
-                    rateInput.value = 0.95; pitchInput.value = 1;
-                    rateVal.textContent = rateInput.value; pitchVal.textContent = pitchInput.value;
-                    info.textContent = 'Reset to defaults.';
-                });
-
-                // restore rate/pitch if saved
-                const savedRate = localStorage.getItem('grimoire_voice_rate');
-                const savedPitch = localStorage.getItem('grimoire_voice_pitch');
-                if (savedRate) { rateInput.value = savedRate; rateVal.textContent = savedRate; }
-                if (savedPitch) { pitchInput.value = savedPitch; pitchVal.textContent = savedPitch; }
-
-                // small helpful tip for devs: log voices to console
-                console.log('TTS helper loaded. Voices may appear shortly in the dropdown.');
-
-                // ensure voices are populated now if possible
-                setTimeout(() => populateVoices(), 500);
             })();
-
-
         </script>
-
 </body>
 
 </html>
