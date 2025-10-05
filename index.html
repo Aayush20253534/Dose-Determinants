@@ -2535,3 +2535,434 @@
                         window._notificationTimeout = setTimeout(() => { root.classList.remove("show"); }, duration);
                     };
                 })();
+  (function streakTrend() {
+                    window.calculateAdherenceTrend = function (days = 30) {
+                        doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                        medicines = JSON.parse(localStorage.getItem("medicines") || "[]");
+                        const out = [];
+                        for (let i = days - 1; i >= 0; i--) {
+                            const d = new Date(); d.setDate(d.getDate() - i);
+                            const { totalDoses } = calculateDailyAdherence(d);
+                            const taken = doseLogs.filter(l => new Date(l.takenAt).toDateString() === d.toDateString() && l.status === "taken").length;
+                            const adherence = totalDoses > 0 ? Math.round((taken / totalDoses) * 100) : 0;
+                            out.push({ date: new Date(d), adherence });
+                        }
+                        return out;
+                    };
+                    let _streakTrendChart = window._streakTrendChart || null;
+                    window.renderStreakTrendChart = function (elId = "streakTrendChart") {
+                        const el = document.getElementById(elId);
+                        if (!el) return;
+                        const ctx = el.getContext("2d");
+                        const series = calculateAdherenceTrend(30);
+                        const labels = series.map(s => s.date.toLocaleDateString(undefined, { month: "short", day: "numeric" }));
+                        const data = series.map(s => s.adherence);
+                        if (_streakTrendChart) _streakTrendChart.destroy();
+                        _streakTrendChart = new Chart(ctx, {
+                            type: "line",
+                            data: { labels, datasets: [{ label: "Adherence %", data, borderColor: "#ffd166", backgroundColor: "rgba(255,209,102,0.15)", fill: true, tension: 0.25 }] },
+                            options: { scales: { y: { beginAtZero: true, max: 100 } } }
+                        });
+                        window._streakTrendChart = _streakTrendChart;
+                    };
+                })();
+
+                (function exportsAdvanced() {
+                    window.exportLogs = function (opts = { type: "missedCSV", from: null, to: null }) {
+                        doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                        let filtered = doseLogs.slice();
+                        if (opts.from) {
+                            const from = new Date(opts.from); from.setHours(0, 0, 0, 0);
+                            filtered = filtered.filter(l => new Date(l.takenAt) >= from);
+                        }
+                        if (opts.to) {
+                            const to = new Date(opts.to); to.setHours(23, 59, 59, 999);
+                            filtered = filtered.filter(l => new Date(l.takenAt) <= to);
+                        }
+                        if (opts.type === "json") {
+                            const blob = new Blob([JSON.stringify(filtered, null, 2)], { type: "application/json" });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a"); a.href = url; a.download = "dose_logs.json"; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+                            showNotification("📦 Exported logs (JSON)");
+                            return;
+                        }
+                        const rows = [];
+                        if (opts.type === "allCSV") rows.push(["id", "medicineId", "medicineName", "status", "takenAt", "email", "timezone"]);
+                        else rows.push(["Date", "Medicine", "Status", "LoggedAt"]);
+
+                        filtered.forEach(l => {
+                            if (opts.type === "allCSV") rows.push([l.id, l.medicineId, l.medicineName, l.status, new Date(l.takenAt).toISOString(), l.email || "", l.timezone || ""]);
+                            else if (l.status === "missed" || opts.type === "allCSV") rows.push([new Date(l.takenAt).toLocaleDateString(), l.medicineName, l.status, new Date(l.takenAt).toLocaleTimeString()]);
+                        });
+                        if (rows.length <= 1) { showNotification("ℹ️ No logs to export for selected range"); return; }
+                        const csv = rows.map(r => r.map(v => `"${String(v || "").replace(/"/g, '""')}"`).join(",")).join("\r\n");
+                        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a"); a.href = url; a.download = (opts.type === "allCSV" ? "all_logs.csv" : "missed_history.csv"); document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+                        showNotification("📥 Export complete");
+                    };
+                    window.exportMissedHistoryCSV = function () {
+                        const from = document.getElementById("edFrom")?.value || null;
+                        const to = document.getElementById("edTo")?.value || null;
+                        exportLogs({ type: "missedCSV", from, to });
+                    };
+                    document.getElementById("edExportBtn")?.addEventListener("contextmenu", (e) => {
+                        e.preventDefault();
+                        exportLogs({ type: "allCSV" });
+                    });
+                })();
+
+                (function clearReset() {
+                    window.clearPastReminders = function (confirmFirst = true) {
+                        if (confirmFirst && !confirm("Clear all past reminder logs? This cannot be undone.")) return;
+                        doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                        doseLogs = [];
+                        localStorage.setItem("doseLogs", JSON.stringify(doseLogs));
+                        showNotification("🧹 Past reminders cleared");
+                        try { renderUserDashboard(); } catch (e) { }
+                        try { renderMissedDoseHistoryTable(); } catch (e) { }
+                        try { updateDashboard(); } catch (e) { }
+                    };
+                    window.resetDashboardData = function (confirmFirst = true) {
+                        if (confirmFirst && !confirm("Reset all app data? This will remove all medicines and logs.")) return;
+                        localStorage.removeItem("medicines");
+                        localStorage.removeItem("doseLogs");
+                        medicines = []; doseLogs = [];
+                        showNotification("⚠️ App data reset");
+                        try { renderAll(); } catch (e) { }
+                    };
+                })();
+
+                (function pastReminders() {
+                    window.renderPastReminders = function () {
+                        doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                        const pastContainer = document.getElementById("pastRemindersList");
+                        if (!pastContainer) return;
+                        const now = new Date();
+                        const past = (doseLogs || []).filter(log => log.takenAt && new Date(log.takenAt) <= now)
+                            .map(log => ({ name: log.medicineName || "Unknown", time: new Date(log.takenAt), status: log.status === "taken" ? "taken" : "missed" }))
+                            .sort((a, b) => b.time - a.time);
+                        if (!past.length) {
+                            pastContainer.innerHTML = `<p style="color:#e6d3a3;text-align:center;">📜 No past reminders logged yet.</p>`;
+                            return;
+                        }
+                        pastContainer.innerHTML = past.map(p => `
+      <div style="padding:8px;border-radius:8px;background:rgba(0,0,0,0.35);margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;">
+          <div>
+            <strong>${escapeHtml(p.name)}</strong><br>
+            <small style="color:#e6d3a3;">${p.time.toLocaleDateString()} ${p.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
+          </div>
+          <div style="color:${p.status === 'taken' ? '#4ecdc4' : '#eb4d4b'}; font-weight:bold;">${p.status === 'taken' ? '✅ Taken' : '❌ Missed'}</div>
+        </div>
+      </div>
+    `).join("");
+                    };
+                })();
+
+                (function bootstrapMissing() {
+                    document.getElementById("restartWizard")?.addEventListener("click", (e) => { e.preventDefault(); startWizard(); });
+                    document.querySelectorAll("[onclick='clearPastReminders()']").forEach(btn => btn.addEventListener("click", (e) => { e.preventDefault(); clearPastReminders(true); }));
+                    document.querySelectorAll("[onclick='startWizard()']").forEach(btn => btn.addEventListener("click", (e) => { e.preventDefault(); startWizard(); }));
+                    const exportBtn = document.getElementById("edExportBtn");
+                    if (exportBtn) {
+                        exportBtn.removeEventListener?.("click", exportMissedHistoryCSV); // defensive
+                        exportBtn.addEventListener("click", (e) => { e.preventDefault(); exportMissedHistoryCSV(); });
+                    }
+                    try { startCrierTicker(); } catch (e) { console.warn("Crier start failed", e); }
+                    try { setupNotifications(60_000); } catch (e) { console.warn("Notifications setup failed", e); }
+                    try { renderStreakTrendChart(); } catch (e) { console.warn("Streak chart render failed", e); }
+                    try { renderDoseHistoryTimeline && renderDoseHistoryTimeline(); } catch (e) { }
+                    try { renderPastReminders(); } catch (e) { }
+                    window._grimoire = window._grimoire || {};
+                    Object.assign(window._grimoire, { startWitchFlight, triggerMagicTrail, clearPastReminders, resetDashboardData, startWizard, stopCrierTicker, renderPastReminders });
+                })();
+
+                function createStars(count = 300) {
+                    const starOverlay = document.getElementById("starOverlay");
+                    starOverlay.innerHTML = "";
+                    for (let i = 0; i < count; i++) {
+                        const star = document.createElement("div");
+                        star.className = "star";
+                        star.style.setProperty("--s", `${Math.random() * 3 + 1}px`);
+                        star.style.setProperty("--d", `${2 + Math.random() * 3}s`);
+                        star.style.left = `${Math.random() * 100}vw`;
+                        star.style.top = `${Math.random() * 100}vh`;
+                        starOverlay.appendChild(star);
+                    }
+                }
+
+                function startWitchFlight() {
+                    const witch = document.getElementById("flyingWitch");
+                    const starOverlay = document.getElementById("starOverlay");
+                    const sound = document.getElementById("witchSound");
+                    witch.classList.remove("fly");
+                    void witch.offsetWidth;
+                    createStars();
+                    starOverlay.style.display = "block";
+                    setTimeout(() => {
+                        starOverlay.style.opacity = "1";
+                    }, 50);
+                    if (sound) {
+                        sound.currentTime = 0;
+                        sound.play().catch(() => { });
+                    }
+                    witch.classList.add("fly");
+                    setTimeout(() => {
+                        starOverlay.style.opacity = "0";
+                        setTimeout(() => {
+                            starOverlay.style.display = "none";
+                        }, 600);
+                    }, 4000);
+                }
+
+                document.addEventListener("DOMContentLoaded", () => {
+                    setTimeout(() => {
+                        startWitchFlight();
+                    }, 500);
+                });
+
+                document.addEventListener("click", () => {
+                    const sound = document.getElementById("witchSound");
+                    if (sound) {
+                        sound.play().catch(err => console.warn("🔇 Audio blocked:", err));
+                    }
+                }, { once: true });
+
+                const steps = [
+                    { title: "Welcome", text: "Welcome! I will guide you through the main parts of the Grimoire.", target: "h2:contains('Brew New Elixir Schedule') , #medicineForm", tab: "schedule" },
+                    { title: "Schedule Form", text: "This form is where you add a new elixir: name, dose, time and frequency.", target: "#medicineForm", tab: "schedule" },
+                    { title: "Current Elixirs", text: "All active elixirs are listed here. Edit or remove them as needed.", target: "#medicineList", tab: "schedule" },
+                    { title: "User Dashboard - Overview", text: "The User Dashboard shows upcoming reminders and quick stats.", target: "#userDashboard h2, #upcomingRemindersList", tab: "userDashboard" },
+                    { title: "Upcoming Reminders", text: "Upcoming reminders list your next scheduled doses.", target: "#upcomingRemindersList", tab: "userDashboard" },
+                    { title: "Past Reminders", text: "Past reminders are listed here — useful for audit and history.", target: "#pastRemindersList", tab: "userDashboard" },
+                    { title: "📊 Wellness Dashboard", text: "This is your Wellness Dashboard. It summarizes adherence, missed doses, and provides insights to improve consistency.", target: "#dashboard h2", tab: "dashboard" },
+                    { title: "Wellness Rate", text: "At the very top, you'll see your current wellness/adherence rating.", target: "#wellnessRate", tab: "dashboard" },
+                    { title: "Predictions & Risk", text: "This panel contains predictions and risk assessments for adherence.", target: "#predictionPanel", tab: "dashboard" },
+                    { title: "Missed Dose History", text: "Missed Dose History logs every missed intake for review.", target: "#missedHistoryCard", tab: "dashboard" },
+                    { title: "Adherence Trends", text: "Adherence Trends chart shows your weekly performance.", target: "#adherenceChartMain", tab: "dashboard" },
+                    { title: "Taken vs Missed", text: "This chart compares taken vs missed doses.", target: "#missedVsTakenChart", tab: "dashboard" },
+                    { title: "30-Day Progress", text: "30-day trend shows long-term improvements or declines.", target: "#trendLineChart", tab: "dashboard" },
+                    { title: "⏰ Upcoming Performances", text: "Here you’ll see all scheduled doses for the day — whether they're taken, missed, or upcoming. It’s a quick way to stay on track with your regimen.", target: "#upcomingDoses" },
+                    { title: "Streak Dashboard", text: "Here you can see your current and longest streak records.", target: "#currentStreak", tab: "streakTab" },
+                ];
+
+                function queryByContains(selectorWithContains) {
+                    try {
+                        if (!selectorWithContains) return null;
+                        const parts = selectorWithContains.split(',').map(s => s.trim());
+                        for (const p of parts) {
+                            const m = /^(.*):contains\(['"](.+)['"]\)$/.exec(p);
+                            if (m) {
+                                const tag = m[1];
+                                const txt = m[2].toLowerCase();
+                                const nodes = Array.from(document.querySelectorAll(tag));
+                                const found = nodes.find(n => (n.textContent || '').toLowerCase().includes(txt));
+                                if (found) return found;
+                            } else {
+                                const el = document.querySelector(p);
+                                if (el) return el;
+                            }
+                        }
+                        return null;
+                    } catch (e) {
+                        return null;
+                    }
+                }
+
+                function getTargetElement(selector) {
+                    if (!selector) return null;
+                    try {
+                        const el = document.querySelector(selector);
+                        if (el) return el;
+                    } catch (e) { }
+                    return queryByContains(selector);
+                }
+
+                const floating = document.getElementById('floatingWitch');
+                const wizardBox = document.getElementById('wizardTutorial');
+                const wizardTitle = document.getElementById('wizardTitle');
+                const wizardProgress = document.getElementById('wizardProgress');
+                const wizardText = document.getElementById('wizardText');
+                const btnNext = document.getElementById('wizardNext');
+                const btnPrev = document.getElementById('wizardPrev');
+                const btnSkip = document.getElementById('wizardSkip');
+                const startBtn = document.getElementById('startGuideBtn');
+
+                if (!startBtn) {
+                    const alt = document.getElementById('startFlight');
+                    if (alt) alt.id = 'startGuideBtn';
+                }
+
+                const realStartBtn = document.getElementById('startGuideBtn');
+                let idx = 0;
+                let running = false;
+
+                function moveWitchNearDialogue() {
+                    if (!floating || !wizardBox) return;
+                    const boxRect = wizardBox.getBoundingClientRect();
+                    const witchLeft = boxRect.left - 300;
+                    const witchTop = boxRect.top + boxRect.height / 2 - 50;
+                    floating.style.left = witchLeft + 'px';
+                    floating.style.top = witchTop + 'px';
+                }
+
+                function showWizardBox() {
+                    if (!wizardBox) return;
+                    wizardBox.classList.add('visible');
+                    wizardBox.style.display = 'block';
+                    wizardBox.style.opacity = 1;
+                    setTimeout(moveWitchNearDialogue, 50);
+                }
+
+                function hideWizardBox() {
+                    if (!wizardBox) return;
+                    wizardBox.classList.remove('visible');
+                    wizardBox.style.opacity = 0;
+                    setTimeout(() => { wizardBox.style.display = 'none'; }, 320);
+                }
+
+                async function gotoStep(i) {
+                    if (!steps[i]) return;
+                    const step = steps[i];
+                    if (wizardTitle) wizardTitle.textContent = step.title || '';
+                    if (wizardText) wizardText.textContent = step.text || '';
+                    if (wizardProgress) wizardProgress.textContent = `Step ${i + 1} / ${steps.length}`;
+                    if (step.tab && typeof switchTab === 'function') {
+                        try {
+                            switchTab(step.tab);
+                            await new Promise(r => setTimeout(r, 250));
+                        } catch (e) { }
+                    }
+                    const el = getTargetElement(step.target);
+                    if (el) {
+                        try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+                        catch (e) { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+                        await new Promise(r => setTimeout(r, 520));
+                    } else {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        await new Promise(r => setTimeout(r, 320));
+                    }
+                    showWizardBox();
+                    btnPrev.disabled = i === 0;
+                    btnNext.textContent = i === steps.length - 1 ? 'Finish' : 'Next';
+                }
+
+                function startTutorial() {
+                    const witch = document.getElementById("floatingWitch");
+                    witch.style.display = "block";
+                    void witch.offsetWidth;
+                    witch.classList.add("show-entry");
+                    const wizardBox = document.getElementById("wizardTutorial");
+                    wizardBox.style.display = "block";
+                    wizardBox.classList.add("visible");
+                    wizardBox.style.opacity = 1;
+                    moveWitchNearDialogue();
+                }
+
+                function nextStep() {
+                    if (!running) return;
+                    if (idx < steps.length - 1) {
+                        hideWizardBox();
+                        idx++;
+                        setTimeout(() => gotoStep(idx), 260);
+                    } else {
+                        endTutorial();
+                    }
+                }
+
+                function prevStep() {
+                    if (!running) return;
+                    if (idx > 0) {
+                        hideWizardBox();
+                        idx--;
+                        setTimeout(() => gotoStep(idx), 260);
+                    }
+                }
+
+                function endTutorial() {
+                    if (!running && !wizardBox.classList.contains("visible")) return;
+                    running = false;
+                    idx = 0;
+                    if (wizardBox) {
+                        wizardTitle.textContent = "✨ Tutorial Complete!";
+                        wizardText.textContent = "You’ve now explored all sections of the Grimoire. May your elixirs always brew on time!";
+                        wizardProgress.textContent = "✔ All steps done";
+                        btnNext.style.display = "none";
+                        btnPrev.style.display = "none";
+                        btnSkip.textContent = "Close";
+                        wizardBox.classList.add('visible');
+                        wizardBox.style.display = 'block';
+                        wizardBox.style.opacity = 1;
+                        btnSkip.disabled = true;
+                        setTimeout(() => {
+                            hideWizardBox();
+                            if (floating) floating.style.display = 'none';
+                            btnNext.style.display = "";
+                            btnPrev.style.display = "";
+                            btnSkip.textContent = "Skip";
+                            btnSkip.disabled = false;
+                        }, 2500);
+                    } else {
+                        hideWizardBox();
+                        if (floating) floating.style.display = 'none';
+                    }
+                }
+
+                function summonSparkles(x = 100, y = 500) {
+                    for (let i = 0; i < 100; i++) {
+                        const star = document.createElement("div");
+                        star.className = "sparkle";
+                        star.style.left = x + (Math.random() * 100 - 50) + "px";
+                        star.style.top = y + (Math.random() * 100 - 50) + "px";
+                        document.body.appendChild(star);
+                        setTimeout(() => star.remove(), 1500);
+                    }
+                }
+
+                (function attachButtons() {
+                    const s = document.getElementById('startGuideBtn');
+                    if (s) {
+                        s.style.display = '';
+                        s.addEventListener('click', e => {
+                            e.preventDefault();
+                            if (running) return;
+                            running = true;
+                            summonSparkles(window.innerWidth * 0.1, window.innerHeight * 0.8);
+                            setTimeout(() => {
+                                const witch = document.getElementById("floatingWitch");
+                                witch.style.display = "block";
+                                void witch.offsetWidth;
+                                witch.classList.add("show-entry");
+                                startTutorial();
+                                setTimeout(() => {
+                                    gotoStep(0);
+                                }, 400);
+                            }, 300);
+                        });
+                    }
+                    if (btnNext) {
+                        btnNext.addEventListener('click', e => {
+                            e.preventDefault();
+                            nextStep();
+                        });
+                    }
+                    if (btnPrev) {
+                        btnPrev.addEventListener('click', e => {
+                            e.preventDefault();
+                            prevStep();
+                        });
+                    }
+                    if (btnSkip) {
+                        btnSkip.addEventListener('click', e => {
+                            e.preventDefault();
+                            if (!running && !wizardBox.classList.contains("visible")) return;
+                            endTutorial();
+                        });
+                    }
+                })();
+
+            </script>
+</body>
+
+</html>
