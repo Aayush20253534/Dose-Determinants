@@ -785,4 +785,482 @@
             margin-bottom: 25px;
         }
 
+        .chart {
+            width: 100%;
+            height: 300px;
+            background: rgba(255, 179, 71, 0.1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: #ffb347;
+        }
+
+        .upcoming-doses {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .dose-item {
+            background: rgba(255, 179, 71, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #ffb347;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dose-time {
+            font-weight: bold;
+            color: #ffb347;
+        }
+
+        .dose-medicine {
+            color: #e6d3a3;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #ffb347);
+            color: #2d1b3d;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            z-index: 1000;
+            transform: translateX(400px);
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.8s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .notification.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .notification.fade-out {
+            opacity: 0;
+        }
+
+
+        .mystic-fortune {
+            background: linear-gradient(135deg, rgba(138, 43, 226, 0.2), rgba(255, 105, 180, 0.2));
+            border: 2px solid rgba(138, 43, 226, 0.5);
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .fortune-text {
+            font-size: 1.3rem;
+            font-style: italic;
+            color: #e6d3a3;
+            margin-bottom: 15px;
+        }
+
+        .fortune-crystal {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            animation: rotate 10s linear infinite;
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .wellness-rate {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .wellness-excellent {
+            color: #4ecdc4;
+        }
+
+        .wellness-good {
+            color: #45b7d1;
+        }
+
+        .wellness-fair {
+            color: #f9ca24;
+        }
+
+        .wellness-poor {
+            color: #f0932b;
+        }
+
+        .wellness-critical {
+            color: #eb4d4b;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .nav-tabs {
+                flex-wrap: wrap;
+            }
+
+            .nav-tab {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎪 Alchemist's Grand Grimoire 🎪</h1>
+
+            <div id="flyingWitch">
+                <img src="18fe33bb-e7da-451a-ac22-5c3ee5bfdd63.png" alt="Flying Witch">
+            </div>
+
+            <div id="starOverlay"></div>
+
+            <audio id="witchSound" src="witch-sound.mp3" preload="auto"></audio>
+
+            <div id="floatingWitch" aria-hidden="true" style="display:none;">
+                <img src="witch.png" alt="Witch Guide">
+            </div>
+
+            <button id="startGuideBtn" style="display:none">Start Tutorial</button>
+
+            <div id="wizardTutorial" class="wizard-container" aria-hidden="true" style="display:none;">
+                <div class="wizard-title" id="wizardTitle">Welcome</div>
+                <div class="wizard-progress" id="wizardProgress">Step 1 / 15</div>
+                <div class="wizard-text" id="wizardText">…</div>
+
+                <div class="wizard-controls" style="margin-top:8px;">
+                    <button id="wizardPrev" class="btn">Previous</button>
+                    <button id="wizardNext" class="btn btn-primary">Next</button>
+                    <button id="wizardSkip" class="btn">Skip</button>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('schedule')">📋 Schedule Potions</button>
+            <button class="nav-tab" onclick="switchTab('userDashboard')">📅 User Dashboard</button>
+            <button class="nav-tab" onclick="switchTab('dashboard')">📊 Wellness Dashboard</button>
+            <button class="nav-tab" onclick="switchTab('streakTab')">🔥 Streak</button>
+
+            <div id="clock" style="
+              position: fixed;
+              top: 20px;
+              right: 20px;
+              background:black;
+              padding: 10px 20px;
+              border-radius: 15px;
+              font-size: 1.2rem;
+              color: #ffb347;
+              font-weight: bold;
+              box-shadow: 0 5px 15px rgba(3, 3, 3, 0.3);
+              z-index: 1000;
+              "></div>
+        </div>
+
+        <div id="schedule" class="tab-content active">
+            <div class="card">
+                <h2 style="color: #ffb347; margin-bottom: 20px;">🧪 Brew New Elixir Schedule</h2>
+                <form id="medicineForm">
+                    <div class="form-group">
+                        <label for="medicineName">🧴 Potion Name:</label>
+                        <input type="text" id="medicineName" required placeholder="e.g., flyingpotion">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">📧 User Email:</label>
+                        <input type="email" id="email" required placeholder="e.g., user@example.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dosage">📏 Dosage:</label>
+                        <input type="text" id="dosage" required placeholder="e.g., 500 mg">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="time">⏰ First Dose Time:</label>
+                        <input type="time" id="time" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="frequency">📅 Frequency:</label>
+                        <select id="frequency" required>
+                            <option value="">Select frequency</option>
+                            <option value="onceDaily">Once a day</option>
+                            <option value="twiceDaily">Twice a day (every 12 hrs)</option>
+                            <option value="every8h">Every 8 hours</option>
+                            <option value="everyOtherDay">Every other day</option>
+                            <option value="weekly">Weekly</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="duration">🗓️ Duration:</label>
+                        <input type="number" id="duration" required min="1" max="365" placeholder="e.g., 7 days">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">➕ Add Medication</button>
+                </form>
+
+            </div>
+
+            <div class="card">
+                <h2 style="color: #ffb347; margin-bottom: 20px;">📜 Current Elixir Schedules</h2>
+                <div id="medicineList" class="medicine-list"></div>
+            </div>
+        </div>
+
+        <div id="dashboard" class="tab-content">
+            <div class="mystic-fortune">
+                <div class="fortune-crystal">🔮</div>
+                <div class="wellness-rate" id="wellnessRate">Calculating Wellness Rate...</div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalMedicines">0</div>
+                    <div class="stat-label">Active Elixirs</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalDosesToday">0</div>
+                    <div class="stat-label">Total Doses Today</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="takenToday">0</div>
+                    <div class="stat-label">Taken Today</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="missedToday">0</div>
+                    <div class="stat-label">Missed Today</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="adherenceRate">0%</div>
+                    <div class="stat-label">Adherence Rate</div>
+                </div>
+            </div>
+
+
+            <div class="card" id="predictionCard" style="margin-bottom:20px;">
+                <h3 style="color: #ffb347; margin-bottom: 12px;">🤖 Adherence Predictions & Risk</h3>
+                <div id="predictionPanel">
+                    <p style="color:#e6d3a3;">Analyzing adherence patterns...</p>
+                </div>
+            </div>
+
+            <div class="card" id="enhancedControls" style="margin-bottom:20px;">
+                <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                    <label style="color:#e6d3a3;">Range:
+                        <select id="edRangeSelect">
+                            <option value="7">Last 7 days</option>
+                            <option value="14">Last 14 days</option>
+                            <option value="30">Last 30 days</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </label>
+
+                    <label id="customRangeInputs" style="display:none; color:#e6d3a3;">
+                        From: <input type="date" id="edFrom"> To: <input type="date" id="edTo">
+                    </label>
+
+                    <label style="color:#e6d3a3;">Medicine:
+                        <select id="edMedicineFilter">
+                            <option value="">All</option>
+                        </select>
+                    </label>
+
+                    <button class="btn btn-primary" id="edApplyBtn">Apply</button>
+                    <button class="btn" id="edRefreshBtn">Refresh</button>
+                    <button class="btn btn-danger" id="edExportBtn">Export CSV</button>
+                </div>
+            </div>
+
+            <div class="card" id="missedHistoryCard" style="margin-bottom:20px;">
+                <h3 style="color:#ffb347; margin-bottom:10px;">🗂 Missed Dose History</h3>
+                <div style="overflow:auto; max-height:260px;">
+                    <table id="edHistoryTable" style="width:100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="text-align:left; border-bottom:1px solid rgba(255,179,71,0.2);">
+                                <th style="padding:8px;">Date</th>
+                                <th style="padding:8px;">Medicine</th>
+                                <th style="padding:8px;">Status</th>
+                                <th style="padding:8px;">Logged At</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+
+            <div class="chart-container">
+                <h3 style="color: #ffb347; margin-bottom: 15px;">📈 Adherence Trends Over Time</h3>
+                <canvas id="adherenceChartMain"></canvas>
+
+            </div>
+
+            <div class="chart-container">
+                <h3 style="color: #ffb347; margin-bottom: 15px;">📊 Missed vs Taken Doses</h3>
+                <canvas id="missedVsTakenChart"
+                    style="max-width: 250px; max-height: 250px; margin: 0 auto; display: block;"></canvas>
+
+            </div>
+
+            <div class="chart-container">
+                <h3 style="color: #ffb347; margin-bottom: 15px;">📉 Adherence Progress Over 30 Days</h3>
+                <canvas id="trendLineChart"></canvas>
+            </div>
+
+
+            <div class="card">
+                <h3 style="color: #ffb347; margin-bottom: 15px;">⏰ Upcoming Performances</h3>
+                <div id="upcomingDoses" class="upcoming-doses"></div>
+            </div>
+
+        </div>
+
+
+        <div id="userDashboard" class="tab-content">
+            <div class="card">
+                <h2 style="color: #ffb347; margin-bottom: 20px;">📅 Upcoming Reminders</h2>
+                <div id="upcomingRemindersList"></div>
+            </div>
+
+            <div class="card">
+                <h2 style="color: #ffb347; margin-bottom: 20px;">📜 Past Reminders</h2>
+                <button class="btn btn-danger" onclick="clearPastReminders()">🗑️ Clear All Past Reminders</button>
+                <div id="pastRemindersList" style="margin-top: 15px;"></div>
+            </div>
+
+        </div>
+
+        <div id="streakTab" class="tab-content">
+            <div class="card">
+                <h2 style="color:#ffb347; margin-bottom:20px;">🔥 Streak Performance</h2>
+                <div class="dashboard-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="currentStreak">0 days</div>
+                        <div class="stat-label">Current Streak</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="longestStreak">0 days</div>
+                        <div class="stat-label">Longest Streak</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalDaysTracked">0</div>
+                        <div class="stat-label">Total Days Tracked</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="perfectDays">0</div>
+                        <div class="stat-label">Perfect Adherence Days</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3 style="color: #ffb347; margin-bottom: 15px;">📅 Streak Trend Over Time</h3>
+                    <canvas id="streakTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div id="notification" class="notification">
+            <span id="notificationText"></span>
+            <button id="snoozeBtn"
+                style="display:none; margin-left:10px; padding:5px 10px; border:none; border-radius:5px; background:#4ecdc4; color:#fff; cursor:pointer;">
+                Snooze 15 min
+            </button>
+        </div>
+        <div id="tutorialRoot" style="display:none">
+            <div class="tutorial-overlay" id="tutorialOverlay">
+                <div class="tutorial-backdrop"></div>
+                <div id="tSpotlight" class="t-spotlight" style="display:none"></div>
+            </div>
+
+            <div id="tutorialWidget" class="tutorial-widget" style="display:none" aria-hidden="false">
+                <div class="witch-frame" id="wizardWitch">
+                    <img id="wizardWitchImg" src="" alt="Witch"
+                        style="width:100%; height:auto; display:block; filter: drop-shadow(0 6px 18px rgba(0,0,0,0.6));">
+                </div>
+
+                <div class="tutorial-box" id="tutorialBox">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div class="tutorial-title" id="tutorialTitle">Welcome</div>
+                            <div class="tutorial-progress" id="tutorialProgress">Step 1 / 1</div>
+                        </div>
+                    </div>
+                    <div class="tutorial-text" id="tutorialText">…</div>
+                    <div class="tutorial-hint" id="tutorialHint" style="display:none"></div>
+                    <div style="display:flex; justify-content:flex-end; margin-top:10px;">
+                        <div class="tutorial-controls">
+                            <button id="tutorialPrev" class="btn">Previous</button>
+                            <button id="tutorialNext" class="btn btn-primary">Next</button>
+                            <button id="tutorialSkip" class="btn">Skip</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+
+                const DEFAULT_EMAIL = "thakur29aayush@example.com";
+
+                function getUserEmail() {
+                    return (document.getElementById("email")?.value || "").trim() || DEFAULT_EMAIL;
+                }
+
+                let medicines = JSON.parse(localStorage.getItem("medicines") || "[]");
+                let doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                let currentEditingId = null;
+                let notificationTimeout = null;
+                let adherenceChartInstance = null;
+
+                function persistMedicines() {
+                    localStorage.setItem("medicines", JSON.stringify(medicines || []));
+                }
+
+                function persistDoseLogs() {
+                    localStorage.setItem("doseLogs", JSON.stringify(doseLogs || []));
+                }
+
+                function nowISO() {
+                    return new Date().toISOString();
+                }
+
+                function startOfDay(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+                function endOfDay(d) { const x = new Date(d); x.setHours(23, 59, 59, 999); return x; }
+
+                document.addEventListener("DOMContentLoaded", () => {
+                    medicines = JSON.parse(localStorage.getItem("medicines") || "[]");
+                    doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+
+                    attachEventHandlers();
+                    renderAll();
+                    setTimeout(renderAll, 300);
+                });
+                
 
