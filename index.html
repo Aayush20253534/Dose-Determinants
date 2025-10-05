@@ -1789,4 +1789,749 @@
                                 if (daysSince % 2 === 0) doses.push(makeDoseAt(0, 0));
                                 break;
                             }
+ case "weekly": {
+                                const sd = new Date(med.startDate || med.createdAt || new Date());
+                                if (sd.getDay() === todayStart.getDay()) doses.push(makeDoseAt(0, 0));
+                                break;
+                            }
+                            default:
+                                doses.push(makeDoseAt(0, 0));
+                        }
+                        doses.forEach(dt => {
+                            const isLogged = doseLogs.some(l => {
+                                if (l.medicineId !== med.id) return false;
+                                const takenMs = new Date(l.takenAt).getTime();
+                                return Math.abs(takenMs - dt.getTime()) <= LOG_WINDOW_MS;
+                            });
+                            if (!isLogged) {
+                                upcoming.push({ medicine: med.name, time: dt, overdue: dt < now });
+                            }
+                        });
+                    });
+                    upcoming.sort((a, b) => a.time - b.time);
+                    if (!upcoming.length) {
+                        upcomingContainer.innerHTML = `<p style="color:#e6d3a3;text-align:center;">✅ All doses taken or none scheduled today.</p>`;
+                    } else {
+                        upcomingContainer.innerHTML = upcoming.map(d => `
+            <div class="dose-item" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <div>
+                    <div class="dose-time">${d.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                    <div class="dose-medicine">🧪 ${escapeHtml(d.medicine)}</div>
+                </div>
+                <div style="font-weight:bold;color:${d.overdue ? '#eb4d4b' : '#4ecdc4'};">
+                    ${d.overdue ? 'Overdue' : 'Upcoming'}
+                </div>
+            </div>
+        `).join("");
+                    }
+                    const past = (doseLogs || []).filter(log => log.takenAt).map(log => ({
+                        name: log.medicineName || "Unknown",
+                        time: new Date(log.takenAt),
+                        status: log.status === "taken" ? "✅ Taken" : "❌ Missed"
+                    })).sort((a, b) => b.time - a.time);
 
+                    if (!past.length) {
+                        pastContainer.innerHTML = `<p style="color:#e6d3a3;text-align:center;">📜 No past reminders logged yet.</p>`;
+                    } else {
+                        pastContainer.innerHTML = past.map(p => `
+            <div style="padding:8px;border-radius:8px;background:rgba(0,0,0,0.35);margin-bottom:8px;">
+                <div style="display:flex;justify-content:space-between;">
+                    <div>
+                        <strong>${escapeHtml(p.name)}</strong><br>
+                        <small style="color:#e6d3a3;">${p.time.toLocaleDateString()} ${p.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
+                    </div>
+                    <div style="color:${p.status.includes('✅') ? '#4ecdc4' : '#eb4d4b'}; font-weight:bold;">${p.status}</div>
+                </div>
+            </div>
+        `).join("");
+                    }
+                }
+
+                function showNotification(text, duration = 3000, opts = {}) {
+                    const el = document.getElementById("notification");
+                    const txt = document.getElementById("notificationText");
+                    if (!el || !txt) return;
+                    txt.textContent = text;
+                    el.classList.add("show");
+                    document.getElementById("snoozeBtn").style.display = opts.allowSnooze ? "inline-block" : "none";
+
+                    clearTimeout(notificationTimeout);
+                    notificationTimeout = setTimeout(() => { el.classList.remove("show"); }, duration);
+                    const snoozeBtn = document.getElementById("snoozeBtn");
+                    if (snoozeBtn) {
+                        snoozeBtn.onclick = () => {
+                            el.classList.remove("show");
+                            setTimeout(() => {
+                                showNotification(text, 3000, opts);
+                            }, 15 * 60 * 1000);
+                        };
+                    }
+                }
+
+                function exportMissedHistoryCSV() {
+                    doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                    const rows = [["Date", "Medicine", "Status", "LoggedAt"]];
+                    doseLogs.filter(l => l.status === "missed").forEach(l => rows.push([new Date(l.takenAt).toLocaleDateString(), l.medicineName, l.status, new Date(l.takenAt).toLocaleString()]));
+                    if (rows.length === 1) { showNotification("No missed logs to export"); return; }
+                    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+                    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a"); a.href = url; a.download = "missed_history.csv"; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+                    showNotification("📥 Exported missed history CSV");
+
+                }
+                let wizardActive = false;
+                function startWizard() {
+                    wizardActive = true;
+                    document.getElementById('wizardOverlay')?.classList.add('active');
+                    document.getElementById('wizardContainer')?.classList.add('active');
+                    document.getElementById('restartWizard').style.display = 'none';
+                    showNotification("🎪 Tutorial started");
+                }
+
+                function stopWizard() {
+                    wizardActive = false;
+                    document.getElementById('wizardOverlay')?.classList.remove('active');
+                    document.getElementById('wizardContainer')?.classList.remove('active');
+                    document.getElementById('restartWizard').style.display = 'inline-block';
+                    showNotification("🎪 Tutorial ended");
+                }
+
+                function startWitchFlight() {
+                    const flying = document.getElementById("flyingWitch");
+                    const starOverlay = document.getElementById("starOverlay");
+                    const audio = document.getElementById("witchSound");
+                    if (!flying) return;
+                    starOverlay.style.display = 'block'; starOverlay.style.opacity = '1';
+                    flying.classList.add("fly");
+                    try { audio?.play(); } catch (e) { }
+                    setTimeout(() => { flying.classList.remove("fly"); starOverlay.style.opacity = '0'; setTimeout(() => starOverlay.style.display = 'none', 600); }, 4500);
+                }
+
+                function formatTime(time24) {
+                    if (!time24) return "";
+                    const [h, m] = time24.split(":").map(Number);
+                    const ampm = h >= 12 ? "PM" : "AM";
+                    const hh = h % 12 || 12;
+                    return `${hh}:${String(m).padStart(2, "0")} ${ampm}`;
+                }
+
+                function switchTab(name) {
+                    if (!name) return;
+                    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+                    document.getElementById(name)?.classList.add('active');
+                    const btn = Array.from(document.querySelectorAll('.nav-tab')).find(b => (b.getAttribute('onclick') || '').includes(`'${name}'`));
+                    if (btn) btn.classList.add('active');
+                    if (name === 'dashboard') updateDashboard();
+                    if (name === 'userDashboard') renderUserDashboard();
+                    if (name === 'schedule') renderMedicines();
+                    if (name === 'streakTab') updateStreakDisplay();
+                }
+
+                function updateStreakDisplay() {
+                    doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                    medicines = JSON.parse(localStorage.getItem("medicines") || "[]");
+                    document.getElementById("currentStreak").textContent = `${calculateStreak()} days`;
+                    const totalDays = Object.keys(doseLogs.reduce((acc, l) => { acc[new Date(l.takenAt).toDateString()] = true; return acc; }, {})).length;
+                    document.getElementById("totalDaysTracked").textContent = totalDays;
+                    let perfect = 0;
+                    const grouped = {};
+                    doseLogs.forEach(l => { const d = new Date(l.takenAt).toDateString(); grouped[d] = grouped[d] || { taken: 0, total: 0 }; grouped[d].total++; if (l.status === "taken") grouped[d].taken++; });
+                    Object.values(grouped).forEach(g => { if (g.taken === g.total) perfect++; });
+                    document.getElementById("perfectDays").textContent = perfect;
+                    document.getElementById("longestStreak").textContent = `${calculateLongestStreak()} days`;
+                }
+
+                function calculateLongestStreak() {
+                    doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                    const dayMap = {};
+                    doseLogs.forEach(l => {
+                        const d = new Date(l.takenAt).toDateString();
+                        dayMap[d] = dayMap[d] || { taken: 0, total: 0 };
+                        if (l.status === "taken") dayMap[d].taken++;
+                        dayMap[d].total++;
+                    });
+                    const days = Object.keys(dayMap).sort((a, b) => new Date(a) - new Date(b));
+                    let max = 0, cur = 0, prev = null;
+                    days.forEach(d => {
+                        if (dayMap[d].taken === dayMap[d].total) {
+                            if (prev && (new Date(d).getTime() - new Date(prev).getTime() === 24 * 3600 * 1000)) cur++; else cur = 1;
+                        } else cur = 0;
+                        max = Math.max(max, cur);
+                        prev = d;
+                    });
+                    return max;
+                }
+
+                function renderAll() {
+                    medicines = JSON.parse(localStorage.getItem("medicines") || "[]");
+                    doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                    renderMedicines();
+                    updateDashboard();
+                    renderMissedDoseHistoryTable();
+                    updateUpcomingDoses();
+                    renderUserDashboard();
+                    updateStreakDisplay();
+                }
+
+                function checkElementId(id) { return !!document.getElementById(id); }
+                window._app = {
+                    renderAll, renderMedicines, markAsTaken, markAsMissed, medicines, doseLogs, persistMedicines, persistDoseLogs
+                };
+
+                function generateRandomCrierAnnouncement() {
+                    const crierAnnouncements = [
+                        "🎪 Attention performers! Remember your morning strength elixir before the aerial acts!",
+                        "🎭 The show starts in 30 minutes - time for your pre-performance potions!",
+                        "⚡ Energy levels looking optimal today thanks to consistent elixir adherence!",
+                        "🌟 Outstanding wellness performance this week! The audience applauds your dedication!",
+                        "🎪 New safety protocol: Double-check your elixir schedule before entering the ring!",
+                        "🎨 The Alchemist has brewed fresh batches - your supply is ready for pickup!"
+                    ];
+                    return crierAnnouncements[Math.floor(Math.random() * crierAnnouncements.length)];
+                }
+
+                let _crierInterval = null;
+                function startCrierTicker(intervalMs = 8000) {
+                    const el = document.getElementById("crierTicker") || (() => {
+                        const banner = document.createElement("div");
+                        banner.id = "crierTicker";
+                        banner.style.cssText = "position:fixed;left:20px;bottom:20px;background:rgba(0,0,0,0.6);color:#ffb347;padding:8px 12px;border-radius:12px;z-index:1200;";
+                        document.body.appendChild(banner);
+                        return banner;
+                    })();
+                    if (_crierInterval) clearInterval(_crierInterval);
+                    el.textContent = generateRandomCrierAnnouncement();
+                    _crierInterval = setInterval(() => {
+                        el.textContent = generateRandomCrierAnnouncement();
+                    }, intervalMs);
+                }
+
+                function stopCrierTicker() {
+                    if (_crierInterval) {
+                        clearInterval(_crierInterval);
+                        _crierInterval = null;
+                    }
+                    const el = document.getElementById("crierTicker");
+                    if (el) el.remove();
+                }
+
+                function generateUUID(prefix = "") {
+                    const s4 = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+                    return prefix + s4() + s4() + "-" + s4() + "-" + s4();
+                }
+
+                function clearPastReminders(confirmFirst = true) {
+                    if (confirmFirst && !confirm("Clear all past reminder logs? This cannot be undone.")) return;
+                    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+                    doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                    doseLogs = [];
+                    localStorage.setItem("doseLogs", JSON.stringify(doseLogs));
+                    showNotification("🧹 Past reminders cleared");
+                    try { renderUserDashboard(); } catch (e) { }
+                    try { renderMissedDoseHistoryTable(); } catch (e) { }
+                    try { updateDashboard(); } catch (e) { }
+                }
+
+                function resetDashboardData(confirmFirst = true) {
+                    if (confirmFirst && !confirm("Reset all app data? This will remove all medicines and logs.")) return;
+                    localStorage.removeItem("medicines");
+                    localStorage.removeItem("doseLogs");
+                    medicines = []; doseLogs = [];
+                    showNotification("⚠️ App data reset");
+                    renderAll && renderAll();
+                }
+
+                function exportLogs(options = { type: "missedCSV", from: null, to: null }) {
+                    doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                    let filtered = doseLogs.slice();
+                    if (options.from) {
+                        const from = new Date(options.from); from.setHours(0, 0, 0, 0);
+                        filtered = filtered.filter(l => new Date(l.takenAt) >= from);
+                    }
+                    if (options.to) {
+                        const to = new Date(options.to); to.setHours(23, 59, 59, 999);
+                        filtered = filtered.filter(l => new Date(l.takenAt) <= to);
+                    }
+                    if (options.type === "json") {
+                        const blob = new Blob([JSON.stringify(filtered, null, 2)], { type: "application/json" });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a"); a.href = url; a.download = "dose_logs.json"; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+                        showNotification("📦 Exported logs (JSON)");
+                        return;
+                    }
+                    const rows = [];
+                    if (options.type === "allCSV") rows.push(["id", "medicineId", "medicineName", "status", "takenAt", "email", "timezone"]);
+                    else rows.push(["Date", "Medicine", "Status", "LoggedAt"]);
+                    filtered.forEach(l => {
+                        if (options.type === "allCSV") {
+                            rows.push([l.id, l.medicineId, l.medicineName, l.status, new Date(l.takenAt).toISOString(), l.email || "", l.timezone || ""]);
+                        } else if (l.status === "missed" || options.type === "allCSV") {
+                            rows.push([new Date(l.takenAt).toLocaleDateString(), l.medicineName, l.status, new Date(l.takenAt).toLocaleTimeString()]);
+                        }
+                    });
+                    if (rows.length <= 1) {
+                        showNotification("ℹ️ No logs to export for selected range");
+                        return;
+                    }
+                    const csv = rows.map(r => r.map(v => `"${String(v || "").replace(/"/g, '""')}"`).join(",")).join("\r\n");
+                    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a"); a.href = url; a.download = (options.type === "allCSV" ? "all_logs.csv" : "missed_history.csv"); document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+                    showNotification("📥 Export complete");
+                }
+
+                document.getElementById("edExportBtn")?.addEventListener("contextmenu", (e) => {
+                    e.preventDefault();
+                    exportLogs({ type: "allCSV" });
+                });
+
+                let _notificationScheduler = null;
+                function setupNotifications(pollIntervalMs = 60_000) {
+                    if (_notificationScheduler) clearInterval(_notificationScheduler);
+                    checkForUpcomingNotifications();
+                    _notificationScheduler = setInterval(checkForUpcomingNotifications, pollIntervalMs);
+                }
+
+                function checkForUpcomingNotifications() {
+                    medicines = JSON.parse(localStorage.getItem("medicines") || "[]");
+                    doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                    const now = new Date();
+                    medicines.forEach(med => {
+                        const baseTime = med.time || "09:00";
+                        const [h, m] = baseTime.split(":").map(Number);
+                        const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+                        const candidateTimes = [];
+                        if (med.frequency === "twiceDaily") {
+                            candidateTimes.push(new Date(todayStart).setHours(h, m, 0, 0));
+                            candidateTimes.push(new Date(todayStart).setHours(h + 12, m, 0, 0));
+                        } else if (med.frequency === "every8h") {
+                            candidateTimes.push(new Date(todayStart).setHours(h, m, 0, 0));
+                            candidateTimes.push(new Date(todayStart).setHours(h + 8, m, 0, 0));
+                            candidateTimes.push(new Date(todayStart).setHours(h + 16, m, 0, 0));
+                        } else {
+                            candidateTimes.push(new Date(todayStart).setHours(h, m, 0, 0));
+                        }
+                        candidateTimes.forEach(ts => {
+                            const doseDate = new Date(ts);
+                            const diffMs = doseDate - now;
+                            if (diffMs > 0 && diffMs <= 10 * 60 * 1000) {
+                                const alreadyLoggedToday = doseLogs.some(l => l.medicineId === med.id && new Date(l.takenAt).toDateString() === new Date().toDateString());
+                                if (!alreadyLoggedToday) {
+                                    showNotification(`⏰ Upcoming dose: ${med.name} at ${formatTime(med.time)}`, 8000);
+                                    sendEmailNotification({
+                                        to: getUserEmail(),
+                                        subject: `Upcoming dose: ${med.name}`,
+                                        body: `Your scheduled dose for ${med.name} is at ${formatTime(med.time)}. Mark it taken when done.`
+                                    }).catch(() => { });
+                                }
+                            }
+                        });
+                    });
+                }
+
+                async function sendEmailNotification(type, med) {
+                    try {
+                        const res = await fetch("http://localhost:3000/sendEmail", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                email: med.email || getUserEmail(),
+                                medicineName: med.medicineName || med.name,
+                                dosage: med.dosage,
+                                time: med.time,
+                                status: type
+                            })
+                        });
+
+                        const data = await res.json();
+                        if (res.ok) {
+                            console.log(`📧 Email sent for ${med.medicineName} (${type})`);
+                        } else {
+                            console.warn("❌ Email sending failed:", data);
+                        }
+                    } catch (err) {
+                        console.error("❌ Email API error:", err);
+                    }
+                }
+
+                function showNotification(text, duration = 4000, opts = {}) {
+                    let root = document.getElementById("notification");
+                    if (!root) {
+                        root = document.createElement("div");
+                        root.id = "notification";
+                        root.className = "notification";
+                        root.innerHTML = '<span id="notificationText"></span><button id="snoozeBtn" style="display:none;margin-left:10px;padding:5px 10px;border:none;border-radius:5px;background:#4ecdc4;color:#fff;cursor:pointer;">Snooze 15 min</button>';
+                        document.body.appendChild(root);
+                    }
+                    const textEl = root.querySelector("#notificationText");
+                    const snoozeBtn = root.querySelector("#snoozeBtn");
+                    textEl.textContent = text;
+                    root.classList.add("show");
+                    if (opts.allowSnooze) snoozeBtn.style.display = "inline-block"; else snoozeBtn.style.display = "none";
+                    snoozeBtn.onclick = () => {
+                        root.classList.remove("show");
+                        setTimeout(() => {
+                            showNotification(text, duration, opts);
+                        }, 15 * 60 * 1000); // 15 minutes
+                    };
+                    clearTimeout(notificationTimeout);
+                    notificationTimeout = setTimeout(() => {
+                        root.classList.remove("show");
+                    }, duration);
+                }
+
+                function triggerMagicTrail() {
+                    const overlay = document.getElementById("starOverlay");
+                    if (!overlay) return;
+                    overlay.style.display = "block";
+                    overlay.style.opacity = "1";
+                    const starCount = 18;
+                    for (let i = 0; i < starCount; i++) {
+                        const s = document.createElement("div");
+                        s.className = "star";
+                        const size = (Math.random() * 4) + 1;
+                        s.style.setProperty('--s', `${size}px`);
+                        s.style.left = `${Math.random() * 100}%`;
+                        s.style.top = `${Math.random() * 80}%`;
+                        s.style.animationDuration = `${2 + Math.random() * 3}s`;
+                        overlay.appendChild(s);
+                        setTimeout(() => {
+                            s.remove();
+                        }, 5200);
+                    }
+                    setTimeout(() => {
+                        overlay.style.opacity = '0';
+                        setTimeout(() => overlay.style.display = 'none', 700);
+                    }, 4200);
+                }
+
+                function stopFlightAnimation() {
+                    const flying = document.getElementById("flyingWitch");
+                    if (!flying) return;
+                    flying.classList.remove("fly");
+                    const overlay = document.getElementById("starOverlay");
+                    if (overlay) {
+                        overlay.style.display = 'none';
+                        overlay.innerHTML = '';
+                    }
+                }
+
+                function calculateAdherenceTrend(days = 30) {
+                    doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                    medicines = JSON.parse(localStorage.getItem("medicines") || "[]");
+                    const result = [];
+                    for (let i = days - 1; i >= 0; i--) {
+                        const d = new Date();
+                        d.setDate(d.getDate() - i);
+                        const { totalDoses } = calculateDailyAdherence(d);
+                        const taken = doseLogs.filter(l => new Date(l.takenAt).toDateString() === d.toDateString() && l.status === "taken").length;
+                        const adherence = totalDoses > 0 ? Math.round((taken / totalDoses) * 100) : 0;
+                        result.push({ date: new Date(d), adherence });
+                    }
+                    return result;
+                }
+
+                let _streakTrendChart = null;
+
+                function renderStreakTrendChart(elId = "streakTrendChart") {
+                    const el = document.getElementById(elId);
+                    if (!el) return;
+                    const ctx = el.getContext("2d");
+                    const series = calculateAdherenceTrend(30);
+                    const labels = series.map(s => s.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+                    const data = series.map(s => s.adherence);
+
+                    if (_streakTrendChart) _streakTrendChart.destroy();
+                    _streakTrendChart = new Chart(ctx, {
+                        type: 'line',
+                        data: { labels, datasets: [{ label: 'Adherence %', data, borderColor: '#ffd166', backgroundColor: 'rgba(255,209,102,0.15)', fill: true, tension: 0.25 }] },
+                        options: { scales: { y: { beginAtZero: true, max: 100 } } }
+                    });
+                }
+
+                function renderDoseHistoryTimeline(containerId = "doseTimelineContainer", days = 30, opts = { onlyMissed: true }) {
+                    const parentCard = document.getElementById("missedHistoryCard");
+                    if (!parentCard) return;
+                    let container = document.getElementById(containerId);
+                    if (!container) {
+                        const el = document.createElement("div");
+                        el.id = containerId;
+                        el.style.cssText = "margin-top:12px;overflow:auto;padding:8px 12px;background:rgba(255,255,255,0.02);border-radius:10px;max-height:260px;";
+                        parentCard.appendChild(el);
+                        container = el;
+                    }
+                    doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                    const end = new Date(); end.setHours(23, 59, 59, 999);
+                    const start = new Date(); start.setDate(start.getDate() - (days - 1)); start.setHours(0, 0, 0, 0);
+                    const dayMap = {};
+                    doseLogs.forEach(l => {
+                        if (!l || !l.takenAt) return;
+                        const d = new Date(l.takenAt);
+                        if (isNaN(d)) return;
+                        if (d < start || d > end) return;
+                        const isoDay = startOfDay(d).toISOString();
+                        dayMap[isoDay] = dayMap[isoDay] || { date: startOfDay(d), taken: 0, missed: 0, logs: [] };
+                        if (l.status === "taken") dayMap[isoDay].taken++;
+                        if (l.status === "missed") dayMap[isoDay].missed++;
+                        dayMap[isoDay].logs.push(l);
+                    });
+                    let items = Object.values(dayMap).sort((a, b) => b.date - a.date);
+                    if (opts.onlyMissed) items = items.filter(it => it.missed > 0);
+                    if (!items.length) {
+                        container.innerHTML = `<div style="padding:12px;color:#e6d3a3;text-align:center;">No missed-dose days in the last ${days} days.</div>`;
+                        return;
+                    }
+                    container.innerHTML = items.map(it => {
+                        const d = it.date;
+                        const dateLabel = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+                        const badge = it.missed > 0
+                            ? `<span style="color:#eb4d4b;font-weight:bold;margin-right:6px;">●</span>`
+                            : `<span style="color:#4ecdc4;font-weight:bold;margin-right:6px;">●</span>`;
+                        return `
+          <div class="timeline-row" data-date="${d.toISOString()}"
+             style="display:flex;justify-content:space-between;align-items:center;padding:8px 6px;border-bottom:1px dashed rgba(255,179,71,0.03);cursor:pointer;">
+            <div style="flex:1">${dateLabel}</div>
+            <div style="width:140px;text-align:right">${badge} ${it.taken}✅ ${it.missed}❌</div>
+          </div>
+        `;
+                    }).join("");
+                    container.querySelectorAll('.timeline-row').forEach(el => {
+                        el.removeEventListener?.('click', el._timelineClickHandler);
+                        const handler = () => {
+                            const iso = el.getAttribute('data-date');
+                            if (!iso) return;
+                            const d = new Date(iso);
+                            const yyyyMmDd = d.toISOString().split('T')[0];
+                            const rangeSelect = document.getElementById("edRangeSelect");
+                            if (rangeSelect) rangeSelect.value = "custom";
+                            document.getElementById("customRangeInputs").style.display = "inline-block";
+                            document.getElementById("edFrom").value = yyyyMmDd;
+                            document.getElementById("edTo").value = yyyyMmDd;
+                            renderMissedDoseHistoryTable();
+                            try { switchTab && switchTab('dashboard'); } catch (e) { }
+                        };
+                        el._timelineClickHandler = handler;
+                        el.addEventListener('click', handler);
+                    });
+                }
+
+                async function markAsMissed(id) {
+                    medicines = JSON.parse(localStorage.getItem("medicines") || "[]");
+                    doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                    const med = medicines.find(m => m.id === id);
+                    if (!med) {
+                        showNotification("⚠️ Elixir not found");
+                        return;
+                    }
+                    const today = new Date();
+                    const already = doseLogs.some(
+                        l => l.medicineId === id && new Date(l.takenAt).toDateString() === today.toDateString() && l.status === "missed"
+                    );
+                    if (already) {
+                        showNotification("⚠️ Already logged today");
+                        return;
+                    }
+                    const log = {
+                        id: "log_" + Math.random().toString(36).slice(2, 10),
+                        medicineId: id,
+                        medicineName: med.name,
+                        email: getUserEmail(),
+                        status: "missed",
+                        takenAt: new Date().toISOString(),
+                        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                        synced: false
+                    };
+                    doseLogs.push(log);
+                    localStorage.setItem("doseLogs", JSON.stringify(doseLogs));
+                    showNotification(`❌ ${med.name} marked missed`);
+                    try { renderMissedDoseHistoryTable(); } catch (e) { }
+                    try { updateDashboard(); } catch (e) { }
+                    try { updateUpcomingDoses(); } catch (e) { }
+                    try {
+                        await fetch("http://localhost:3000/logDose", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(log)
+                        });
+                    } catch (err) {
+                        console.warn("Server sync failed for missed:", err);
+                    }
+                    try {
+                        await fetch("http://localhost:3000/sendEmail", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                email: getUserEmail(),
+                                medicineName: med.name,
+                                status: "missed",
+                                time: new Date().toLocaleString()
+                            })
+                        });
+                        console.log(`📧 Missed dose email sent for ${med.name}`);
+                    } catch (err) {
+                        console.warn("Email notification failed:", err);
+                    }
+                }
+
+                (function bootstrapMissingParts() {
+                    document.querySelectorAll("[onclick='clearPastReminders()']").forEach(btn => {
+                        btn.addEventListener("click", (e) => { e.preventDefault(); clearPastReminders(true); });
+                    });
+                    document.querySelectorAll("[onclick='startWizard()']").forEach(btn => {
+                        btn.addEventListener("click", (e) => { e.preventDefault(); startWizard(); });
+                    });
+                    document.querySelectorAll("[onclick='restartWizard()']").forEach(btn => {
+                        btn.addEventListener("click", (e) => { e.preventDefault(); restartWizard(); });
+                    });
+                    document.getElementById("edExportBtn")?.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        const from = document.getElementById("edFrom")?.value || null;
+                        const to = document.getElementById("edTo")?.value || null;
+                        exportLogs({ type: "missedCSV", from, to });
+                    });
+                    try { startCrierTicker(); } catch (e) { console.warn("Crier start failed", e); }
+                    try { setupNotifications(60_000); } catch (e) { console.warn("Notifications setup failed", e); }
+                    try { renderStreakTrendChart(); } catch (e) { }
+                    try { renderDoseHistoryTimeline(); } catch (e) { }
+
+                    document.getElementById("snoozeBtn")?.addEventListener("click", () => {
+                    });
+                })();
+
+                (function clockFix() {
+                    function updateClock() {
+                        const el = document.getElementById("clock");
+                        if (!el) return;
+                        const now = new Date();
+                        const opts = { timeZone: "Asia/Kolkata", hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit", day: "2-digit", month: "short", year: "numeric" };
+                        const ist = new Intl.DateTimeFormat([], opts).format(now);
+                        el.textContent = `IST ${ist}`;
+                    }
+                    updateClock();
+                    setInterval(updateClock, 1000);
+                })();
+
+                async function syncDoseLogsFromServer() {
+                    try {
+                        const res = await fetch("http://localhost:3000/doseLogs");
+                        const logs = await res.json();
+                        localStorage.setItem("doseLogs", JSON.stringify(logs));
+                        doseLogs = logs;
+                        renderUserDashboard();
+                        updateUpcomingDoses();
+                    } catch (e) {
+                        console.error("❌ Failed to sync dose logs:", e);
+                    }
+                }
+
+                document.addEventListener("DOMContentLoaded", syncDoseLogsFromServer);
+
+                (function crierTicker() {
+                    const messages = [
+                        "🎪 Remember your morning potion — an ounce of ritual keeps the chaos away!",
+                        "🔔 Pro tip: mark doses Taken promptly to keep your wellness rate high.",
+                        "📦 Export logs regularly to keep archives of your elixir regimes.",
+                        "⭐ Keep an eye on streaks — perfect days build long-term gains.",
+                        "⚠️ If a dose is missed, mark it in the Grimoire to keep stats accurate.",
+                        "🧙‍♂️ The Alchemist recommends a review of schedules weekly."
+                    ];
+                    function generateRandomCrierAnnouncement() {
+                        return messages[Math.floor(Math.random() * messages.length)];
+                    }
+                    let _crierInterval = null;
+                    window.startCrierTicker = function (intervalMs = 8000) {
+                        let el = document.getElementById("crierTicker");
+                        if (!el) {
+                            el = document.createElement("div");
+                            el.id = "crierTicker";
+                            el.style.cssText = "position:fixed;left:20px;bottom:20px;background:rgba(0,0,0,0.6);color:#ffb347;padding:8px 12px;border-radius:12px;z-index:1200;font-weight:bold;";
+                            document.body.appendChild(el);
+                        }
+                        el.textContent = generateRandomCrierAnnouncement();
+                        if (_crierInterval) clearInterval(_crierInterval);
+                        _crierInterval = setInterval(() => { el.textContent = generateRandomCrierAnnouncement(); }, intervalMs);
+                    };
+                    window.stopCrierTicker = function () {
+                        if (_crierInterval) {
+                            clearInterval(_crierInterval);
+                            _crierInterval = null;
+                        }
+                        const el = document.getElementById("crierTicker");
+                        if (el) el.remove();
+                    };
+                })();
+
+                (function notificationSystem() {
+                    let _schedulerId = null;
+                    window.setupNotifications = function (pollIntervalMs = 60_000) {
+                        if (_schedulerId) clearInterval(_schedulerId);
+                        // run immediately then start interval
+                        checkForUpcomingNotifications();
+                        _schedulerId = setInterval(checkForUpcomingNotifications, pollIntervalMs);
+                    };
+
+                    async function checkForUpcomingNotifications() {
+                        medicines = JSON.parse(localStorage.getItem("medicines") || "[]");
+                        doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                        const now = new Date();
+                        medicines.forEach(med => {
+                            const [h, min] = (med.time || "09:00").split(":").map(Number);
+                            const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+                            const candidateTimes = [];
+                            if (med.frequency === "twiceDaily") {
+                                candidateTimes.push(new Date(todayStart).setHours(h, min, 0, 0));
+                                candidateTimes.push(new Date(todayStart).setHours(h + 12, min, 0, 0));
+                            } else if (med.frequency === "every8h") {
+                                candidateTimes.push(new Date(todayStart).setHours(h, min, 0, 0));
+                                candidateTimes.push(new Date(todayStart).setHours(h + 8, min, 0, 0));
+                                candidateTimes.push(new Date(todayStart).setHours(h + 16, min, 0, 0));
+                            } else {
+                                candidateTimes.push(new Date(todayStart).setHours(h, min, 0, 0));
+                            }
+                            candidateTimes.forEach(ts => {
+                                const doseDate = new Date(ts);
+                                const diff = doseDate - now;
+                                if (diff > 0 && diff <= 10 * 60 * 1000) {
+                                    const logged = doseLogs.some(l => l.medicineId === med.id && new Date(l.takenAt).toDateString() === new Date().toDateString());
+                                    if (!logged) {
+                                        showNotification(`⏰ Upcoming: ${med.name} at ${formatTime(med.time)}`, 8000, { allowSnooze: true });
+                                        sendEmailNotification({ to: getUserEmail(), subject: `Upcoming dose: ${med.name}`, body: `Dose at ${formatTime(med.time)}.` }).catch(() => { });
+                                    }
+                                }
+                            });
+                        });
+                    }
+                    window.sendEmailNotification = async function ({ to, subject, body }) {
+                        try {
+                            await fetch("http://localhost:3000/sendEmail", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to, subject, body }) });
+                        } catch (e) { console.warn("Email send failed (local)", e); }
+                    };
+                    window.checkForUpcomingNotifications = checkForUpcomingNotifications;
+                })();
+
+                (function notificationUI() {
+                    if (typeof window._notificationTimeout === "undefined") window._notificationTimeout = null;
+                    window.showNotification = function (text, duration = 4000, opts = {}) {
+                        let root = document.getElementById("notification");
+                        if (!root) {
+                            root = document.createElement("div");
+                            root.id = "notification";
+                            root.className = "notification";
+                            root.innerHTML = '<span id="notificationText"></span><button id="snoozeBtn" style="display:none;margin-left:10px;padding:5px 10px;border:none;border-radius:5px;background:#4ecdc4;color:#fff;cursor:pointer;">Snooze 15 min</button>';
+                            document.body.appendChild(root);
+                        }
+                        const txt = root.querySelector("#notificationText");
+                        const snooze = root.querySelector("#snoozeBtn");
+                        txt.textContent = text;
+                        root.classList.add("show");
+                        if (opts.allowSnooze) snooze.style.display = "inline-block"; else snooze.style.display = "none";
+                        snooze.onclick = () => {
+                            root.classList.remove("show");
+                            setTimeout(() => showNotification(text, duration, opts), 15 * 60 * 1000);
+                        };
+                        clearTimeout(window._notificationTimeout);
+                        window._notificationTimeout = setTimeout(() => { root.classList.remove("show"); }, duration);
+                    };
+                })();
