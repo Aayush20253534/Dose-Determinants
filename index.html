@@ -1263,4 +1263,530 @@
                     setTimeout(renderAll, 300);
                 });
                 
+ function attachEventHandlers() {
+                    const medForm = document.getElementById("medicineForm");
+                    if (medForm) medForm.addEventListener("submit", medicineFormSubmit);
+                    document.getElementById("edApplyBtn")?.addEventListener("click", () => {
+                        updateDashboard();
+                        setTimeout(renderMissedDoseHistoryTable, 250);
+                    });
+                    document.getElementById("edRefreshBtn")?.addEventListener("click", () => {
+                        renderAll();
+                        showNotification("🔄 Refreshed all components");
+                    });
+                    document.getElementById("edExportBtn")?.addEventListener("click", exportMissedHistoryCSV);
+                    const rangeSelect = document.getElementById("edRangeSelect");
+                    if (rangeSelect) {
+                        rangeSelect.addEventListener("change", (e) => {
+                            const val = e.target.value;
+                            document.getElementById("customRangeInputs").style.display = val === "custom" ? "inline-block" : "none";
+                        });
+                    }
+                    document.getElementById("startFlight")?.addEventListener("click", startWitchFlight);
+                }
+
+                async function medicineFormSubmit(e) {
+                    e.preventDefault();
+                    medicines = JSON.parse(localStorage.getItem("medicines") || "[]");
+                    doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                    const form = e.target;
+                    const name = (document.getElementById("medicineName")?.value || "").trim();
+                    const email = getUserEmail();
+                    const dosage = (document.getElementById("dosage")?.value || "").trim();
+                    const time = (document.getElementById("time")?.value || "09:00").trim();
+                    const frequency = (document.getElementById("frequency")?.value || "onceDaily");
+                    const duration = parseInt(document.getElementById("duration")?.value || "0", 10) || 0;
+                    const formData = {
+                        id: currentEditingId || Date.now().toString(),
+                        name,
+                        email,
+                        dosage,
+                        time,
+                        frequency,
+                        duration,
+                        startDate: (new Date()).toISOString().split("T")[0],
+                        createdAt: nowISO()
+                    };
+                    if (currentEditingId) {
+                        const idx = medicines.findIndex(m => m.id === currentEditingId);
+                        if (idx !== -1) {
+                            medicines[idx] = { ...medicines[idx], ...formData }; // <-- correct spread merge
+                            showNotification("🧪 Elixir updated");
+                        } else {
+                            medicines.push(formData);
+                            showNotification("➕ Elixir added (fallback)");
+                        }
+                        currentEditingId = null;
+                    } else {
+                        medicines.push(formData);
+                        showNotification("➕ Elixir added");
+                    }
+                    persistMedicines();
+                    form.reset();
+                    renderAll();
+                    try {
+                        fetch("http://localhost:3000/addSchedule", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(formData) })
+                            .then(() => console.log("server sync attempted"));
+                    } catch (e) { console.warn("Server sync error", e); }
+                }
+
+                function renderMedicines() {
+                    medicines = JSON.parse(localStorage.getItem("medicines") || "[]");
+                    const container = document.getElementById("medicineList");
+                    if (!container) return;
+                    if (!medicines.length) {
+                        container.innerHTML = `<div style="text-align:center;color:#e6d3a3;padding:30px;">No elixirs yet. Add one above.</div>`;
+                        return;
+                    }
+                    container.innerHTML = medicines.map(m => `
+    <div class="medicine-item">
+      <h3>🧪 ${escapeHtml(m.name)}</h3>
+      <div class="medicine-details">
+        <div class="detail-item"><span class="detail-label">Dosage:</span> ${escapeHtml(m.dosage)}</div>
+        <div class="detail-item"><span class="detail-label">Time:</span> ${formatTime(m.time || "09:00")}</div>
+        <div class="detail-item"><span class="detail-label">Frequency:</span> ${escapeHtml(m.frequency)}</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="editMedicine('${m.id}')">✏️ Edit</button>
+        <button class="btn btn-danger" onclick="deleteMedicine('${m.id}')">🗑️ Remove</button>
+        <button class="btn btn-primary" onclick="markAsTaken('${m.id}')">✅ Mark Taken</button>
+        <button class="missed-btn" onclick="markAsMissed('${m.id}')">❌ Mark Missed</button>
+      </div>
+    </div>
+  `).join("");
+                }
+
+                function editMedicine(id) {
+                    medicines = JSON.parse(localStorage.getItem("medicines") || "[]");
+                    const med = medicines.find(m => m.id === id);
+                    if (!med) { showNotification("⚠️ Not found"); return; }
+                    document.getElementById("medicineName").value = med.name;
+                    document.getElementById("dosage").value = med.dosage;
+                    document.getElementById("time").value = med.time;
+                    document.getElementById("frequency").value = med.frequency;
+                    document.getElementById("duration").value = med.duration || 0;
+                    currentEditingId = id;
+                    switchTab('schedule');
+                    showNotification("✏️ Edit ready");
+                }
+
+                function deleteMedicine(id) {
+                    if (!confirm("Remove this elixir?")) return;
+                    medicines = JSON.parse(localStorage.getItem("medicines") || "[]");
+                    medicines = medicines.filter(m => m.id !== id);
+                    persistMedicines();
+                    renderAll();
+                    showNotification("🗑️ Elixir removed");
+                }
+
+                function escapeHtml(s) {
+                    return String(s || "").replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+                }
+
+                async function markAsTaken(id) {
+                    medicines = JSON.parse(localStorage.getItem("medicines") || "[]");
+                    doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                    const med = medicines.find(m => m.id === id);
+                    if (!med) { showNotification("⚠️ Elixir not found"); return; }
+                    const today = new Date().toDateString();
+                    const alreadyLogged = doseLogs.some(
+                        l => l.medicineId === id && new Date(l.takenAt).toDateString() === today && l.status === "taken"
+                    );
+                    if (alreadyLogged) {
+                        showNotification("⚠️ Already logged today");
+                        return;
+                    }
+                    const log = {
+                        id: "log_" + Math.random().toString(36).slice(2, 10),
+                        medicineId: id,
+                        medicineName: med.name,
+                        email: getUserEmail(),
+                        status: "taken",
+                        takenAt: new Date().toISOString(),
+                        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                        synced: false
+                    };
+                    doseLogs.push(log);
+                    localStorage.setItem("doseLogs", JSON.stringify(doseLogs));
+                    const btn = document.getElementById(`takenBtn_${id}`);
+                    if (btn) btn.disabled = true;
+                    try {
+                        const res = await fetch("http://localhost:3000/sendEmail", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                email: getUserEmail(),
+                                medicineName: med.name,
+                                status: "taken",
+                                time: new Date().toLocaleTimeString(),
+                            }),
+                        });
+                        const result = await res.json();
+                        if (res.ok && result.success) {
+                            showNotification(`✅ ${med.name} marked taken & email sent`);
+                        } else {
+                            showNotification(`⚠️ ${med.name} marked taken but email failed`);
+                        }
+                    } catch (err) {
+                        console.error("❌ Failed to send taken email:", err);
+                        showNotification(`⚠️ ${med.name} marked taken but email failed`);
+                    }
+                    try { renderMissedDoseHistoryTable(); } catch (e) { }
+                    try { updateDashboard(); } catch (e) { }
+                    try {
+                        await fetch("http://localhost:3000/logDose", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(log)
+                        });
+                    } catch (err) {
+                        console.warn("Server sync failed for taken:", err);
+                    }
+                }
+
+                function calculateDailyAdherence(dateObj = new Date()) {
+                    medicines = JSON.parse(localStorage.getItem("medicines") || "[]");
+                    doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                    const target = startOfDay(dateObj);
+                    let totalDoses = 0;
+                    medicines.forEach(med => {
+                        const startDate = startOfDay(new Date(med.startDate || med.createdAt || new Date()));
+                        const duration = parseInt(med.duration || 0, 10);
+                        let endDate = med.endDate ? startOfDay(new Date(med.endDate)) : null;
+                        if (!endDate && duration > 0) { endDate = new Date(startDate); endDate.setDate(endDate.getDate() + duration - 1); }
+                        if (target < startDate) return;
+                        if (endDate && target > endDate) return;
+                        switch (med.frequency) {
+                            case "onceDaily": totalDoses += 1; break;
+                            case "twiceDaily": totalDoses += 2; break;
+                            case "every8h": totalDoses += 3; break;
+                            case "everyOtherDay": {
+                                const daysSinceStart = Math.floor((target - startDate) / (1000 * 60 * 60 * 24));
+                                if (daysSinceStart % 2 === 0) totalDoses += 1;
+                                break;
+                            }
+                            case "weekly": {
+                                if (startDate.getDay() === target.getDay()) totalDoses += 1;
+                                break;
+                            }
+                            default: totalDoses += 1;
+                        }
+                    });
+                    const dateStr = target.toDateString();
+                    const takenToday = doseLogs.filter(l => new Date(l.takenAt).toDateString() === dateStr && l.status === "taken").length;
+                    const missedToday = doseLogs.filter(l => new Date(l.takenAt).toDateString() === dateStr && l.status === "missed").length;
+                    const adherenceRate = totalDoses > 0 ? Math.round((takenToday / totalDoses) * 100) : 0;
+                    return { totalDoses, takenToday, missedToday, adherenceRate };
+                }
+
+                function calculateStreak() {
+                    doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                    const dates = {};
+                    doseLogs.forEach(log => {
+                        const d = new Date(log.takenAt).toDateString();
+                        if (!dates[d]) dates[d] = { taken: 0, missed: 0, total: 0 };
+                        if (log.status === "taken") dates[d].taken++;
+                        if (log.status === "missed") dates[d].missed++;
+                        dates[d].total++;
+                    });
+                    let streak = 0;
+                    let day = startOfDay(new Date());
+                    while (true) {
+                        const key = day.toDateString();
+                        if (!dates[key]) break;
+                        if (dates[key].missed > 0 || dates[key].taken < dates[key].total) break;
+                        streak++;
+                        day.setDate(day.getDate() - 1);
+                    }
+                    return streak;
+                }
+
+                function updateDashboard() {
+                    medicines = JSON.parse(localStorage.getItem("medicines") || "[]");
+                    doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                    const today = new Date();
+                    const { totalDoses, takenToday, missedToday, adherenceRate } = calculateDailyAdherence(today);
+                    document.getElementById("totalDosesToday").textContent = totalDoses;
+                    document.getElementById("takenToday").textContent = takenToday;
+                    document.getElementById("missedToday").textContent = missedToday;
+                    document.getElementById("adherenceRate").textContent = totalDoses > 0 ? `${adherenceRate}%` : "N/A";
+                    document.getElementById("totalMedicines").textContent = medicines.length;
+                    updateWellnessRate(adherenceRate);
+                    updateAdherencePredictionAndRisk();
+                    try { renderAdherenceChart(); } catch (e) { console.warn(e); }
+                    try { renderMissedVsTakenChart(); } catch (e) { console.warn(e); }
+                    try { renderTrendLineChart(); } catch (e) { console.warn(e); }
+                    try { renderMissedDoseHistoryTable(); } catch (e) { console.warn(e); }
+                    try { updateUpcomingDoses(); } catch (e) { console.warn(e); }
+                    try { renderUserDashboard(); } catch (e) { console.warn(e); }
+                }
+
+                function updateWellnessRate(rate) {
+                    const el = document.getElementById("wellnessRate");
+                    if (!el) return;
+                    let text = "", cls = "";
+                    if (rate >= 90) { text = "✨ Excellent Wellness ✨"; cls = "wellness-excellent"; }
+                    else if (rate >= 75) { text = "🌟 Good Wellness 🌟"; cls = "wellness-good"; }
+                    else if (rate >= 50) { text = "⚡ Fair Wellness ⚡"; cls = "wellness-fair"; }
+                    else if (rate >= 25) { text = "⚠️ Poor Wellness ⚠️"; cls = "wellness-poor"; }
+                    else { text = "🚨 Critical Wellness 🚨"; cls = "wellness-critical"; }
+                    el.textContent = text;
+                    el.className = `wellness-rate ${cls}`;
+                }
+
+                function updateAdherencePredictionAndRisk() {
+                    const panel = document.getElementById("predictionPanel"); if (!panel) return;
+                    let total = 0, counted = 0;
+                    for (let i = 0; i < 7; i++) {
+                        const d = new Date(); d.setDate(d.getDate() - i);
+                        const { adherenceRate } = calculateDailyAdherence(d);
+                        total += adherenceRate; counted++;
+                    }
+                    const avg7 = counted > 0 ? total / counted : 0;
+                    let riskText = "", riskLevel = "";
+                    if (avg7 >= 90) { riskText = "🧙‍♂️ Excellent adherence trend!"; riskLevel = "🟢 Low Risk"; }
+                    else if (avg7 >= 70) { riskText = "✨ Mostly consistent adherence."; riskLevel = "🟡 Moderate Risk"; }
+                    else if (avg7 >= 50) { riskText = "⚠️ Adherence is slipping."; riskLevel = "🟠 High Risk"; }
+                    else { riskText = "🚨 Severe adherence risk!"; riskLevel = "🔴 Critical"; }
+                    const prediction = Math.max(0, Math.min(100, avg7 - 2));
+                    panel.innerHTML = `
+    <p>${riskText}</p>
+    <p><strong>Risk Level:</strong> ${riskLevel}</p>
+    <p><strong>7-day Avg Adherence:</strong> ${avg7.toFixed(1)}%</p>
+    <p><strong>Predicted Next Week:</strong> ${prediction.toFixed(1)}%</p>
+  `;
+                }
+
+                function renderAdherenceChart() {
+                    medicines = JSON.parse(localStorage.getItem("medicines") || "[]");
+                    doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                    const el = document.getElementById("adherenceChartMain"); if (!el) return;
+                    const ctx = el.getContext("2d");
+                    const labels = [], data = [];
+                    for (let i = 6; i >= 0; i--) {
+                        const d = new Date(); d.setDate(d.getDate() - i);
+                        const { totalDoses } = calculateDailyAdherence(d);
+                        const dayStr = d.toDateString();
+                        const taken = doseLogs.filter(l => new Date(l.takenAt).toDateString() === dayStr && l.status === "taken").length;
+                        const rate = totalDoses > 0 ? Math.round((taken / totalDoses) * 100) : 0;
+                        labels.push(d.toLocaleDateString(undefined, { weekday: 'short' }));
+                        data.push(rate);
+                    }
+                    if (adherenceChartInstance) adherenceChartInstance.destroy();
+                    adherenceChartInstance = new Chart(ctx, {
+                        type: 'bar',
+                        data: { labels, datasets: [{ label: 'Adherence %', data, backgroundColor: 'rgba(255,179,71,0.6)', borderColor: '#ffb347', borderWidth: 2 }] },
+                        options: { scales: { y: { beginAtZero: true, max: 100 } } }
+                    });
+                }
+
+                function renderMissedVsTakenChart() {
+                    doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                    const el = document.getElementById("missedVsTakenChart"); if (!el) return;
+                    const ctx = el.getContext("2d");
+                    const today = new Date().toDateString();
+                    const taken = doseLogs.filter(l => new Date(l.takenAt).toDateString() === today && l.status === 'taken').length;
+                    const missed = doseLogs.filter(l => new Date(l.takenAt).toDateString() === today && l.status === 'missed').length;
+                    if (window.missedVsTakenChartInstance) window.missedVsTakenChartInstance.destroy();
+                    window.missedVsTakenChartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: ['Taken', 'Missed'], datasets: [{ data: [taken, missed], backgroundColor: ['#4CAF50', '#F44336'] }] }, options: { plugins: { legend: { position: 'bottom' } } } });
+                }
+
+                function renderTrendLineChart() {
+                    doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                    const el = document.getElementById("trendLineChart"); if (!el) return;
+                    const ctx = el.getContext("2d");
+                    const labels = [], data = [];
+                    for (let i = 29; i >= 0; i--) {
+                        const d = new Date(); d.setDate(d.getDate() - i);
+                        const { totalDoses } = calculateDailyAdherence(d);
+                        const dayStr = d.toDateString();
+                        const taken = doseLogs.filter(l => new Date(l.takenAt).toDateString() === dayStr && l.status === 'taken').length;
+                        const rate = totalDoses > 0 ? Math.round((taken / totalDoses) * 100) : 0;
+                        labels.push(d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+                        data.push(rate);
+                    }
+                    if (window.trendLineChartInstance) window.trendLineChartInstance.destroy();
+                    window.trendLineChartInstance = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'Daily Adherence %', data, borderColor: '#ffb347', backgroundColor: 'rgba(255,179,71,0.2)', fill: true, tension: 0.3 }] }, options: { scales: { y: { beginAtZero: true, max: 100 } } } });
+                }
+
+                function renderMissedDoseHistoryTable() {
+                    doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                    medicines = JSON.parse(localStorage.getItem("medicines") || "[]");
+                    const tableBody = document.querySelector("#edHistoryTable tbody");
+                    if (!tableBody) return;
+                    const medFilter = document.getElementById("edMedicineFilter");
+                    if (medFilter) {
+                        const current = medFilter.value || "";
+                        medFilter.innerHTML = `<option value="">All</option>` + medicines.map(m => `<option value="${m.id}">${escapeHtml(m.name)}</option>`).join("");
+                        if (current) medFilter.value = current;
+                    }
+                    const selectedMed = document.getElementById("edMedicineFilter")?.value || "";
+                    const range = document.getElementById("edRangeSelect")?.value || "7";
+                    const fromVal = document.getElementById("edFrom")?.value;
+                    const toVal = document.getElementById("edTo")?.value;
+                    let from = fromVal ? startOfDay(new Date(fromVal)) : null;
+                    let to = toVal ? endOfDay(new Date(toVal)) : null;
+                    if (!from && !to && range !== "custom") {
+                        to = endOfDay(new Date());
+                        from = startOfDay(new Date());
+                        from.setDate(to.getDate() - parseInt(range, 10) + 1);
+                    }
+
+                    let missed = doseLogs.filter(l => l.status === "missed");
+
+                    missed = missed.filter(log => {
+                        const med = medicines.find(m => m.id === log.medicineId);
+                        if (!med) return false;
+                        const startDate = startOfDay(new Date(med.startDate || med.createdAt || new Date()));
+                        let endDate = med.endDate ? startOfDay(new Date(med.endDate)) : null;
+                        if (!endDate && med.duration) {
+                            endDate = new Date(startDate);
+                            endDate.setDate(endDate.getDate() + parseInt(med.duration, 10) - 1);
+                        }
+                        const logDate = startOfDay(new Date(log.takenAt));
+                        if (logDate < startDate) return false;
+                        if (endDate && logDate > endDate) return false;
+                        return true;
+                    });
+                    if (selectedMed) missed = missed.filter(l => l.medicineId === selectedMed);
+                    if (from) missed = missed.filter(l => new Date(l.takenAt) >= from);
+                    if (to) missed = missed.filter(l => new Date(l.takenAt) <= to);
+                    missed.sort((a, b) => new Date(b.takenAt) - new Date(a.takenAt));
+                    if (!missed.length) {
+                        tableBody.innerHTML = `<tr><td colspan="4" style="padding:10px;text-align:center;color:#e6d3a3;">No missed doses found for the selected filters.</td></tr>`;
+                        return;
+                    }
+                    tableBody.innerHTML = missed.map(m => `
+        <tr>
+            <td style="padding:8px;">${new Date(m.takenAt).toLocaleDateString()}</td>
+            <td style="padding:8px;">${escapeHtml(m.medicineName)}</td>
+            <td style="padding:8px;color:#e74c3c;font-weight:bold;">❌ Missed</td>
+            <td style="padding:8px;">${new Date(m.takenAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+        </tr>
+    `).join("");
+                }
+
+                function updateUpcomingDoses() {
+                    const medicines = JSON.parse(localStorage.getItem("medicines") || "[]");
+                    const doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                    const container = document.getElementById("upcomingDoses");
+                    if (!container) return;
+                    const now = new Date();
+                    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    const LOG_WINDOW_MS = 2 * 60 * 60 * 1000; // 2 hours window
+                    let upcoming = [];
+                    medicines.forEach(med => {
+                        const startDate = new Date(med.startDate || med.createdAt || now);
+                        startDate.setHours(0, 0, 0, 0);
+                        const duration = parseInt(med.duration || 0, 10);
+                        let endDate = med.endDate ? new Date(med.endDate) : null;
+                        if (!endDate && duration > 0) {
+                            endDate = new Date(startDate);
+                            endDate.setDate(endDate.getDate() + duration - 1);
+                        }
+                        if (now < startDate || (endDate && now > endDate)) return;
+                        const [h, min] = (med.time || "09:00").split(":").map(Number);
+                        const dosesToday = [];
+                        const base = new Date(todayStart.getTime());
+
+                        if (med.frequency === "onceDaily") {
+                            dosesToday.push(new Date(base.getTime() + h * 3600000 + min * 60000));
+                        }
+                        if (med.frequency === "twiceDaily") {
+                            dosesToday.push(new Date(base.getTime() + h * 3600000 + min * 60000));
+                            dosesToday.push(new Date(base.getTime() + (h + 12) * 3600000 + min * 60000));
+                        }
+                        if (med.frequency === "every8h") {
+                            for (let i = 0; i < 24; i += 8) {
+                                dosesToday.push(new Date(base.getTime() + (h + i) * 3600000 + min * 60000));
+                            }
+                        }
+                        if (med.frequency === "everyOtherDay") {
+                            const diffDays = Math.floor((todayStart - startDate) / (1000 * 60 * 60 * 24));
+                            if (diffDays % 2 === 0) {
+                                dosesToday.push(new Date(base.getTime() + h * 3600000 + min * 60000));
+                            }
+                        }
+                        if (med.frequency === "weekly") {
+                            const diffDays = Math.floor((todayStart - startDate) / (1000 * 60 * 60 * 24));
+                            if (diffDays % 7 === 0) {
+                                dosesToday.push(new Date(base.getTime() + h * 3600000 + min * 60000));
+                            }
+                        }
+                        dosesToday.forEach(doseTime => {
+                            const log = doseLogs.find(l =>
+                                l.medicineId === med.id &&
+                                Math.abs(new Date(l.takenAt) - doseTime) < LOG_WINDOW_MS
+                            );
+                            let status = "Upcoming";
+                            if (log?.status === "taken") status = "✅ Taken";
+                            else if (log?.status === "missed") status = "❌ Missed";
+                            else if (now > doseTime) status = "❌ Missed"; // not logged & time passed
+                            upcoming.push({
+                                medicine: med.medicineName || med.name,
+                                dosage: med.dosage,
+                                time: doseTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                                status
+                            });
+                        });
+                    });
+                    container.innerHTML = upcoming.length
+                        ? upcoming
+                            .sort((a, b) => (a.time > b.time ? 1 : -1))
+                            .map(
+                                d => `
+        <div class="dose-item">
+          <div>
+            <div class="dose-time">${d.time}</div>
+            <div class="dose-medicine">${d.medicine}</div>
+            <div class="dose-dosage">${d.dosage || ""}</div>
+          </div>
+          <div class="dose-status">${d.status}</div>
+        </div>  
+         `
+                            )
+                            .join("")
+                        : `<div style="color:#e6d3a3; text-align:center;">No doses scheduled today.</div>`;
+                }
+
+                function renderUserDashboard() {
+                    medicines = JSON.parse(localStorage.getItem("medicines") || "[]");
+                    doseLogs = JSON.parse(localStorage.getItem("doseLogs") || "[]");
+                    const upcomingContainer = document.getElementById("upcomingRemindersList");
+                    const pastContainer = document.getElementById("pastRemindersList");
+                    if (!upcomingContainer || !pastContainer) return;
+                    const now = new Date();
+                    const todayStart = startOfDay(now);
+                    const LOG_WINDOW_MS = 2 * 60 * 60 * 1000;
+                    const upcoming = [];
+                    medicines.forEach(med => {
+                        const startDate = startOfDay(new Date(med.startDate || med.createdAt || new Date()));
+                        const duration = parseInt(med.duration || 0, 10);
+                        let endDate = med.endDate ? startOfDay(new Date(med.endDate)) : null;
+                        if (!endDate && duration > 0) { endDate = new Date(startDate); endDate.setDate(endDate.getDate() + duration - 1); }
+                        if (now < startDate || (endDate && now > endDate)) return;
+                        const [h, min] = (med.time || "09:00").split(":").map(Number);
+                        const makeDoseAt = (hourOffset = 0, dayOffset = 0) => {
+                            const d = new Date(todayStart);
+                            d.setDate(d.getDate() + dayOffset);
+                            d.setHours(h + hourOffset, min, 0, 0);
+                            return d;
+                        };
+                        let doses = [];
+                        switch (med.frequency) {
+                            case "onceDaily":
+                                doses.push(makeDoseAt(0, 0));
+                                break;
+                            case "twiceDaily":
+                                doses.push(makeDoseAt(0, 0), makeDoseAt(12, 0));
+                                break;
+                            case "every8h":
+                                doses.push(makeDoseAt(0, 0), makeDoseAt(8, 0), makeDoseAt(16, 0));
+                                break;
+                            case "everyOtherDay": {
+                                const s = startOfDay(new Date(med.startDate || med.createdAt || new Date()));
+                                const daysSince = Math.floor((todayStart - s) / (1000 * 60 * 60 * 24));
+                                if (daysSince % 2 === 0) doses.push(makeDoseAt(0, 0));
+                                break;
+                            }
 
